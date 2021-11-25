@@ -11,13 +11,15 @@ Requirements
 # Instalation Instrucions
 1) If you dont have php installed on your my node install it running the command 
 
- - *apt-get install php-fpm*
+'apt-get install php-fpm'
 
 
 2) Create the [php.conf](https://github.com/BitcoinBeachBR/LNBits-Payment-Forward/blob/main/fs/etc/nginx/sites.enabled/php.conf) at */etc/nginx/sites.enabled/*
 
 3) and Restart Nginx
-- /etc/init.d/nginx restart*
+```
+/etc/init.d/nginx restart
+```
 
 4) Create the file [log.php](https://github.com/BitcoinBeachBR/LNBits-Payment-Forward/blob/main/fs/var/www/html/log.php) at */var/www/html*
 
