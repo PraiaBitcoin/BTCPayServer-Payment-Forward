@@ -17,7 +17,7 @@ apt-get install bc
 apt-get install jq  
 ```
 
-2) Create the [php.conf](https://github.com/BitcoinBeachBR/LNBits-Payment-Forward/blob/main/fs/etc/nginx/sites.enabled/php.conf) at */etc/nginx/sites.enabled/*
+2) Create the [php.conf](https://github.com/BitcoinBeachBR/LNBits-Payment-Forward/blob/main/fs/etc/nginx/sites.enabled/php.conf) at ```/etc/nginx/sites.enabled/```
 
 3) and Restart Nginx
 ```
