@@ -2,9 +2,11 @@
 
 #set -x
 
-if [ -f /mnt/hdd/mynode/bbb/payer.conf ]
+BASEDIR=/mnt/hdd/BTCPAYSERVER/
+
+if [ -f $BASEDIR/conf/payer.conf ]
 then
-   . /mnt/hdd/mynode/bbb/payer.conf
+   . $BASEDIR/conf/payer.conf
 fi
 
 tokenStore=$1
@@ -148,7 +150,7 @@ pay () {
 
 if [ -z "$PAYER" ]
 then
-   PAYER not set
+   echo PAYER not set
    exit 1
 fi
 

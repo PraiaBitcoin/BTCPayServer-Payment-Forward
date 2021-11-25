@@ -33,9 +33,9 @@ then
    exit 1 
 fi
 
-if [ -f /mnt/hdd/mynode/bbb/payer.conf ]
+if [ -f $BASEDIR/conf/payer.conf ]
 then
-  . /mnt/hdd/mynode/bbb/payer.conf
+  . $BASEDIR/conf/payer.conf
 fi
 
 if [ -z "$PAYER" ]
@@ -44,9 +44,9 @@ then
    exit 1
 fi
 
-if [ -z "$TAX" ]
+if [ -z "$RATE" ]
 then
-   echo We need a TAX value
+   echo We need a RATE value
    exit 1
 fi
 
@@ -93,7 +93,7 @@ do
 	sleep 30
         continue
    fi
-   amount=$( printf "%.0f" $(echo $value*$TAX*100000000 | bc -l))
+   amount=$( printf "%.0f" $(echo $value*$RATE*100000000 | bc -l))
    echo Amount: $amount
 
    id=$(cat $FILE|jq -r .invoiceId)
