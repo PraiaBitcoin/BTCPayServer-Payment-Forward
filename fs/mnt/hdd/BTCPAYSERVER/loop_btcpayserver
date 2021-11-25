@@ -1,0 +1,125 @@
+#! /bin/sh
+
+set -x
+
+if [ ! -f /usr/bin/jq ]
+then
+	# install jq
+   apt-get install jq
+fi
+
+if [ ! /usr/bin/bc ]
+then
+	# install bc
+   apt-get install bc
+fi
+
+
+while [ true ]
+do
+
+EXEDIR=$(dirname $0)
+
+
+BASEDIR=/mnt/hdd/BTCPAYSERVER/
+INVOICES=$BASEDIR/invoices
+DONEDIR=$BASEDIR/done
+
+install -d $DONEDIR 
+
+if [ ! -x $EXEDIR/doit ]
+then
+   file $EXEDIR/doit not found
+   exit 1 
+fi
+
+if [ -f /mnt/hdd/mynode/bbb/payer.conf ]
+then
+  . /mnt/hdd/mynode/bbb/payer.conf
+fi
+
+if [ -z "$PAYER" ]
+then
+   echo We need a PAYER token
+   exit 1
+fi
+
+if [ -z "$TAX" ]
+then
+   echo We need a TAX value
+   exit 1
+fi
+
+for i in $INVOICES/*.control 
+do
+   if [ ! -f "$i" ]
+   then
+      	##echo file $i does not exists
+	sleep 30    
+        continue
+   fi 
+
+   TOKEN=""
+   FILE=""
+      
+   . $i  
+   if [ -z "$TOKEN" ] || [ -z "$FILE" ]
+   then
+        echo "$i" contains invalid data. Keeping control file and continuing
+	sleep 30
+        continue
+   fi
+
+   if [ ! -f "$FILE" ]
+   then
+        echo $FILE does not exists. Keeping control file and continuing
+	sleep 30
+        continue
+   fi
+
+   type=$(cat $FILE|jq -r .type)
+   if [ "$type" != "InvoicePaymentSettled" ]
+   then 
+        echo $FILE does not have a valid invoice type: [$type] expected [InvoicePaymentSettled]. Keeping control file and continuing
+	sleep 30
+        continue
+   fi   
+ 
+   value=$(cat $FILE|jq -r .payment.value)
+
+   if [ -z "$value" ] 
+   then 
+        echo $FILE does not have a valid invoice value: [$value]. Keeping control file and continuing
+	sleep 30
+        continue
+   fi
+   amount=$( printf "%.0f" $(echo $value*$TAX*100000000 | bc -l))
+   echo Amount: $amount
+
+   id=$(cat $FILE|jq -r .invoiceId)
+
+   if [ -z "$id" ] 
+   then 
+        echo $FILE does not have a invoice Id: [$id]. Keeping control file and continuing
+	sleep 30
+        continue
+   fi
+    
+   $EXEDIR/doit $TOKEN $amount $id
+   status=$?
+   if [ ! $status -eq 0 ]; then
+      echo error while processing $FILE. Keeping control file and continuing
+      sleep 30
+      continue
+   fi   
+   mv $FILE $DONEDIR/ 
+   mv $i $DONEDIR/ 
+
+   sleep 60
+
+done
+
+   sleep 60
+
+
+done

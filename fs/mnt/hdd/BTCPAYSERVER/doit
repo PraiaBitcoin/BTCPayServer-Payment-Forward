@@ -1,0 +1,230 @@
+#! /bin/sh
+
+#set -x
+
+if [ -f /mnt/hdd/mynode/bbb/payer.conf ]
+then
+   . /mnt/hdd/mynode/bbb/payer.conf
+fi
+
+tokenStore=$1
+
+
+if [ -z "$tokenStore" ]
+then
+   echo you have to inform a token
+   exit 1
+fi
+
+amount=$2
+memo=$3
+
+if [ -z "$amount" ]
+then
+   echo you have to inform an amount
+   exit 1
+fi
+
+if [ -z "$memo" ]
+then
+   echo you have to inform a memo
+   exit 1
+fi
+
+if [ ! -f /usr/bin/jq ]
+then
+	# install jq
+   apt-get install jq
+fi
+
+parse () {
+   error=$(echo $ret|jq .error)
+   errmsg=$(echo $ret|jq .message)
+}
+
+parsetoken () {
+   token=$1
+   user=$(echo "$token" | grep -o -P '(?<=://).*(?=@)')
+   pass=$(echo "$user" | grep -o -P '(?<=:).*(?=)')
+   user=$(echo "$user" | grep -o -P '(?<=).*(?=:)')
+   host=$(echo "$token" | grep -o -P '(?<=@).*(?=)')
+#   echo $user
+#   echo $pass
+#   echo $host
+#   echo $token
+}
+
+post () {
+
+	_url=$1
+	_token=$2
+	_data=$3
+	tk=''
+	if [ -n "$_token" ]
+	then
+		_tk=Authorization:\ Bearer\ $_token
+	fi
+        ret=$(curl -ss --insecure -d "$_data" -H 'Content-Type: application/json' -H "$_tk" -X POST "$_url" )
+##H 'Content-Type: application/json'
+	status=$?
+        if [ ! $status -eq 0 ]; then
+   	     error='Unknow'
+	     errmsg=$ret
+	     exit
+	fi   
+
+	parse "$ret"
+#echo $ret
+}
+
+generate () {
+   _host=$1
+   _token=$2
+   _amt=$3
+   _memo=$4
+   
+   js=$(jq -c --null-input \
+		  --arg amt $_amt \
+		  --arg memo "$_memo" \
+		  '{"amt": $amt, "memo": $memo}')
+   cmd=addinvoice
+   url=$_host$cmd
+	echo $url
+	echo $_token
+	echo $js
+
+   post $url $_token "$js"
+   payment_request=$(echo $ret | jq -r .payment_request )
+
+
+}
+
+login () {
+
+	_host=$1
+	_user=$2
+	_pass=$3
+	js=$(jq -c --null-input \
+		  --arg user "$_user" \
+		  --arg password "$_pass" \
+		  '{"login": $user, "password": $password}')
+
+	auth=auth?type=auth
+	url=$_host$auth
+        post $url "" "$js"
+        #ret=$(curl -ss --insecure -d "$js" -X POST $url  -H 'Content-Type: application/json' )
+
+   	token=$(echo $ret | jq -r .access_token )
+
+
+}
+
+pay () {
+    _host=$1
+    _token=$2 
+    _invoice=$3
+
+    js=$(jq -c --null-input \
+		  --arg invoice "$_invoice" \
+		  '{"invoice": $invoice}')
+
+
+    cmd=payinvoice
+    url=$_host$cmd
+    echo $js
+    post $url $_token "$js"
+   echo $ret
+
+}
+
+   /usr/bin/wait_on_lnd.sh
+   status=$?
+   if [ ! $status -eq 0 ]; then
+      echo LND not ready
+      exit 1
+   fi   
+
+
+
+if [ -z "$PAYER" ]
+then
+   PAYER not set
+   exit 1
+fi
+
+parsetoken $PAYER
+userPayer=$user
+passPayer=$pass
+hostPayer=$host
+
+if [ -z "$userPayer" ] || [ -z "$passPayer" ] || [ -z "$hostPayer" ]
+then
+   echo Invalid PAYER token
+   exit 1
+fi
+
+parsetoken $(echo $tokenStore|base64 --decode)
+userStore=$user
+passStore=$pass
+hostStore=$host
+
+if [ -z "$userStore" ] || [ -z "$passStore" ] || [ -z "$hostStore" ]
+then
+   echo Invalid STORE token
+   exit 1
+fi	
+#exit 1
+
+   #Perform login to store service
+login $hostStore $userStore $passStore
+if [ "$error" = "true" ]
+then
+  echo error: [$errmsg]
+  exit 1
+fi
+
+if [ "$token" = "null" ]
+then
+   echo "Could not login to store server... [$ret]"
+   exit 1
+fi
+
+tokenStore=$token
+#echo tokenStore: $tokenStore
+
+
+   #Perform login to payer service
+login $hostPayer $userPayer $passPayer
+if [ "$error" = "true" ]
+then
+  echo error: [$errmsg]
+  exit 1
+fi
+
+if [ "$token" = "null" ]
+then
+   echo "Could not login to payer server... [$ret]"
+   exit 1
+fi
+
+tokenPayer=$token
+#echo tokenPayer: $tokenPayer
+
+generate $hostStore $tokenStore $amount $memo
+
+if [ "$payment_request" = "null" ]
+then
+   echo "Could not get invoice... [$ret]"
+   exit 1
+fi
+
+invoice=$payment_request
+
+pay $hostPayer $tokenPayer $invoice
+if [ "$error" = "true" ]
+then
+  echo error while paying invoice: [$errmsg]
+  exit 1
+fi
+
+exit 0
