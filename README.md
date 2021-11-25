@@ -3,7 +3,7 @@ The Lightning Payment Forward script is useful when you need receive funds in yo
 
 At Bitcoin Beach Brazil in Jericoacoara - Ceara, we are running a MyNodeBTC, and we use BTCPayServer for our local artists as *Virtual BTC Hats*. When they receive a Lightning donation using theirs stores connected to our local node, we had to forward the payment manualy. This script was created to automate this process.
 
-So, when the user receive funds, a BTCPayServer webhook will call a local PHP file, to forward the payment using LNBits wallets, connected to LNDHub, with the end-user using Bluewallet to manage the wallet.
+So, when an invoice is setted the BTCPayServer webhook will call a local PHP file, to forward the payment using LNBits wallets, connected to LNDHub, with the end-user using Bluewallet to manage the wallet.
 
 # Brazilian Way
 Self-payments are not allowed, then, to not need a second node and bypass the issue, we created an private channel with 0 fee, connected to the node of our DEV. Basicly when the script is called, we will force to use this 0 fee channel to transfer the funds direcly to the end-user wallet back to our local node, but now controled by the user
