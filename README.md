@@ -1,12 +1,24 @@
 # Lightning-Payment-Forward
 The Lightning Payment Forward script is useful when you need receive funds in your node and forward to other users. 
 
-Requirements 
+At Bitcoin Beach Brazil in Jericoacoara - Ceara, we are running a MyNodeBTC, and we use BTCPayServer for our local artists as *Virtual BTC Hats*. When they receive a Lightning donation using theirs stores connected to our local node, we had to forward the payment manualy. This script was created to automate this process.
+
+So, when the user receive funds, a BTCPayServer webhook will call a local PHP file, to forward the payment using LNBits wallets, connected to LNDHub, with the end-user using Bluewallet to manage the wallet.
+
+# Brazilian Way
+Self-payments are not allowed, then, to not need a second node and bypass the issue, we created an private channel with 0 fee, connected to the node of our DEV. Basicly when the script is called, we will force to use this 0 fee channel to transfer the funds direcly to the end-user wallet back to our local node, but now controled by the user
+
+
+
+# Requirements
  - Nginx
  - MyNodeBTC
  - BTCPayServer
  - LNBits
  - PHP-FQM
+ - BC
+ - JQ
+
 
 # Instalation Instrucions
 1) Install the needed dependencies
@@ -38,6 +50,10 @@ install -o www-data -d /mnt/hdd/BTCPAYSERVER/
 curl --insecure -d "{}" -X POST http://127.0.0.1:44331/log.php?store=123456789
 ```
 
-7) LNBits configuration 
+7) LNBits configuration. Here we need two wallets, one to make the Payments, and other of the end-user. When the user create a LNBits Wallet, is necessary to activate the extensions, LNURLp and LNHub. After activate, and take note of the wallet URL
+
+   a) The admin will provide the full access 'LNDHUB ADMIN URL' adding it to the ```line X``` of the file [doit](#) located at 
+   b) The user will provide only the 'LNDHUB INVOICE URL' at BTCPayServer explained in the next topic
+
 
 8) BTCPayServer configuration
