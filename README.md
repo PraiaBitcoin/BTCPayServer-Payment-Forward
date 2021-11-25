@@ -9,10 +9,12 @@ Requirements
  - PHP-FQM
 
 # Instalation Instrucions
-1) If you dont have php installed on your my node install it running the command 
+1) Install the needed dependencies
 
 ```
 apt-get install php-fpm
+apt-get install bc
+apt-get install jq  
 ```
 
 2) Create the [php.conf](https://github.com/BitcoinBeachBR/LNBits-Payment-Forward/blob/main/fs/etc/nginx/sites.enabled/php.conf) at */etc/nginx/sites.enabled/*
