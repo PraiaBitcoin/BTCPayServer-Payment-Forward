@@ -23,7 +23,6 @@ Create the file [log.php](https://github.com/BitcoinBeachBR/LNBits-Payment-Forwa
 
 
 Run the command to create the folders
-
 *sudo su*
 *install -o www-data -d /mnt/hdd/BTCPAYSERVER/*
 
