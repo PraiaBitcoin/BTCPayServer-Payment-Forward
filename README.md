@@ -1,4 +1,4 @@
-# Lightning-Payment-Forward
+# BtcPayServer Lightning Payment Forward
 The Lightning Payment Forward script is useful when you need receive funds in your node and forward to other users. 
 
 At Bitcoin Beach Brazil in Jericoacoara - Ceara, we are running a MyNodeBTC, and we use BTCPayServer for our local artists as *Virtual BTC Hats*. When they receive a Lightning donation using theirs stores connected to our local node, we had to forward the payment manualy. This script was created to automate this process.
