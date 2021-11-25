@@ -24,17 +24,18 @@ apt-get install jq
 /etc/init.d/nginx restart
 ```
 
-4) Create the file [log.php](https://github.com/BitcoinBeachBR/LNBits-Payment-Forward/blob/main/fs/var/www/html/log.php) at */var/www/html*
+4) Create the file [log.php](https://github.com/BitcoinBeachBR/LNBits-Payment-Forward/blob/main/fs/var/www/html/log.php) at ```/var/www/html```
+
 
 5) Run the command to create the folders
 ```
-*sudo su*
-*install -o www-data -d /mnt/hdd/BTCPAYSERVER/*
+sudo su
+install -o www-data -d /mnt/hdd/BTCPAYSERVER/
 ```
 
-6) Test 
+6) Run the command below to test if the files are being created at ```/mnt/hdd/BTCPAYSERVER/invoices```
 ```
-*curl --insecure -d "{}" -X POST http://127.0.0.1:44331/log.php?store=123456789*
+curl --insecure -d "{}" -X POST http://127.0.0.1:44331/log.php?store=123456789
 ```
 
 7) LNBits configuration 
