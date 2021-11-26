@@ -5,9 +5,10 @@ EXEDIR=$(dirname $0)
 
 while [ true ]
 do
-  if ! /sbin/pidof loop_btcpayserver &> /dev/null
+  if ! pidof loop_btcpayserver &> /dev/null
   then
       $EXEDIR/loop_btcpayserver
+      sleep 30
   fi
 
 done

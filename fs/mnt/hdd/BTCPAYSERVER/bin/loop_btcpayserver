@@ -50,6 +50,8 @@ then
    exit 1
 fi
 
+echo Processing files
+
 for i in $INVOICES/*.control 
 do
   
@@ -133,9 +135,9 @@ do
    mv $i $DONEDIR/ 
 
 done
-
+	echo Waiting for payments
    ##Wait for a invoice to come   
-   inotifywait -t 60 /mnt/hdd/BTCPAYSERVER/invoices/
+   inotifywait -qq -t 60 /mnt/hdd/BTCPAYSERVER/invoices/ 
 
 
 done
