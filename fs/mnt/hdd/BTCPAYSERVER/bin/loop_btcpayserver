@@ -56,8 +56,6 @@ then
    exit 1
 fi
 
-echo Processing files
-
 files=0
 
 for i in $INVOICES/*.control 
@@ -68,6 +66,8 @@ do
       	##echo file $i does not exists
         continue
    fi 
+
+  echo Processing file \[$i\]
 
    TOKEN=""
    FILE=""
@@ -145,13 +145,13 @@ do
    ((paid+=amount)) 
    ((total+=amount)) 
    ((totalinvoices++))
-   echo Waiting for payments
-
 done
    if [ $files -gt 0 ]
    then
-      echo $paid sats in $files invoice\(s\)
+      echo Paid $paid sats in $files invoice\(s\)
       echo Total paid $total sats in $totalinvoices invoice\(s\)
+      echo Waiting for payments
+
    fi
    ##Wait for a invoice to come   
    inotifywait -qq -t 60 /mnt/hdd/BTCPAYSERVER/invoices/ 
