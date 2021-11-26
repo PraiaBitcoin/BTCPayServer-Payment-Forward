@@ -2,7 +2,7 @@
 
 #set -x
 
-BASEDIR=/mnt/hdd/BTCPAYSERVER/
+BASEDIR=/mnt/hdd/BTCPAYSERVER
 
 if [ -f $BASEDIR/conf/payer.conf ]
 then
@@ -139,13 +139,13 @@ pay () {
 
 }
 
-   /usr/bin/wait_on_lnd.sh
-   status=$?
-   if [ ! $status -eq 0 ]; then
-      echo LND not ready
-      exit 1
-   fi   
-
+# There is some trouble @ BBB's node 
+#   /usr/bin/wait_on_lnd.sh
+#   status=$?
+#   if [ ! $status -eq 0 ]; then
+#      echo LND not ready
+#      exit 1
+#   fi   
 
 
 if [ -z "$PAYER" ]

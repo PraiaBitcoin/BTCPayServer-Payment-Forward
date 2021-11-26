@@ -1,6 +1,6 @@
 #! /bin/sh
 
-set -x
+#set -x
 
 if [ ! -f /usr/bin/jq ]
 then
@@ -21,7 +21,7 @@ do
 EXEDIR=$(dirname $0)
 
 
-BASEDIR=/mnt/hdd/BTCPAYSERVER/
+BASEDIR=/mnt/hdd/BTCPAYSERVER
 INVOICES=$BASEDIR/invoices
 DONEDIR=$BASEDIR/done
 
@@ -52,10 +52,10 @@ fi
 
 for i in $INVOICES/*.control 
 do
+  
    if [ ! -f "$i" ]
    then
       	##echo file $i does not exists
-	sleep 30    
         continue
    fi 
 
@@ -66,22 +66,22 @@ do
    if [ -z "$TOKEN" ] || [ -z "$FILE" ]
    then
         echo "$i" contains invalid data. Keeping control file and continuing
-	sleep 30
         continue
    fi
 
    if [ ! -f "$FILE" ]
    then
         echo $FILE does not exists. Keeping control file and continuing
-	sleep 30
         continue
    fi
+
+	# wait some time until some writes are done
+   sleep 2
 
    type=$(cat $FILE|jq -r .type)
    if [ "$type" != "InvoicePaymentSettled" ]
    then 
         echo $FILE does not have a valid invoice type: [$type] expected [InvoicePaymentSettled]. Keeping control file and continuing
-	sleep 30
         continue
    fi   
  
@@ -90,18 +90,36 @@ do
    if [ -z "$value" ] 
    then 
         echo $FILE does not have a valid invoice value: [$value]. Keeping control file and continuing
-	sleep 30
         continue
    fi
    amount=$( printf "%.0f" $(echo $value*$RATE*100000000 | bc -l))
    echo Amount: $amount
+
+   if [ ! $amount -gt 0 ]
+   then 
+      echo $FILE resulting amount is not grater than 0: [$amount]. Keeping control file and continuing
+      continue
+   fi
+
+   method=$(cat $FILE|jq -r .paymentMethod)
+
+   if [ -z "$method" ] 
+   then 
+        echo $FILE does not have a valid paymentMethod: [$method]. Keeping control file and continuing
+        continue
+   fi
+
+   if [ ! "$method" = "BTC-LightningNetwork" ] 
+   then 
+        echo $FILE does not have BTC-LightningNetwork payment method: [$method]. Keeping control file and continuing
+        continue
+   fi       
 
    id=$(cat $FILE|jq -r .invoiceId)
 
    if [ -z "$id" ] 
    then 
         echo $FILE does not have a invoice Id: [$id]. Keeping control file and continuing
-	sleep 30
         continue
    fi
     
@@ -109,17 +127,15 @@ do
    status=$?
    if [ ! $status -eq 0 ]; then
       echo error while processing $FILE. Keeping control file and continuing
-      sleep 30
       continue
    fi   
    mv $FILE $DONEDIR/ 
    mv $i $DONEDIR/ 
 
-   sleep 60
-
 done
 
-   sleep 60
+   ##Wait for a invoice to come   
+   inotifywait -t 60 /mnt/hdd/BTCPAYSERVER/invoices/
 
 
 done
