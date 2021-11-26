@@ -39,7 +39,7 @@ install -o www-data -d /mnt/hdd/BTCPAYSERVER/
 
 6) Run the command below to test if the files are being created at ```/mnt/hdd/BTCPAYSERVER/invoices```
 ```
-curl --insecure -d "{}" -X POST http://127.0.0.1:44331/log.php?store=123456789
+curl --insecure -d "{}" -X POST http://127.0.0.1:44331/log.php?token=123456789
 ```
 
 7) LNBits configuration. Here we need two wallets, one to make the Payments, and other of the end-user. When the user create a LNBits Wallet, is necessary to activate the extensions, LNURLp and LNHub. After activate, and take note of the wallet URL
@@ -53,6 +53,11 @@ curl --insecure -d "{}" -X POST http://127.0.0.1:44331/log.php?store=123456789
 9) Install guard for loop script - add this line to /etc/rc.local, just before script "exit 0" call
 ```
 ( sleep 300; /path/to/your/script/dir/bin/guard_btcpayserver ) &
+```
+
+10)Some routers doe not redirect internal external ports to internal networks. To mitigate that, put an address resolving to loopback address in /etc/hosts
+```
+127.0.1.1       myNode  your.somedomain.io 
 ```
  
 
