@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 
 #set -x
 
@@ -14,9 +14,15 @@ then
    apt-get install bc
 fi
 
+   echo Waiting for payments
+
+total=0
+totalinvoices=0
 
 while [ true ]
 do
+
+paid=0
 
 EXEDIR=$(dirname $0)
 
@@ -51,6 +57,8 @@ then
 fi
 
 echo Processing files
+
+files=0
 
 for i in $INVOICES/*.control 
 do
@@ -133,9 +141,18 @@ do
    fi   
    mv $FILE $DONEDIR/ 
    mv $i $DONEDIR/ 
+   ((files++))
+   ((paid+=amount)) 
+   ((total+=amount)) 
+   ((totalinvoices++))
+   echo Waiting for payments
 
 done
-	echo Waiting for payments
+   if [ $files -gt 0 ]
+   then
+      echo $paid sats in $files invoice\(s\)
+      echo Total paid $total sats in $totalinvoices invoice\(s\)
+   fi
    ##Wait for a invoice to come   
    inotifywait -qq -t 60 /mnt/hdd/BTCPAYSERVER/invoices/ 
 
