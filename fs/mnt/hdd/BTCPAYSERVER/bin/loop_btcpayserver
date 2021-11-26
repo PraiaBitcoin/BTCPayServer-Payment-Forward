@@ -148,10 +148,13 @@ do
 done
    if [ $files -gt 0 ]
    then
+      echo
+      echo +++++++++++++++++++++++++++++++++++++++++++
       echo Paid $paid sats in $files invoice\(s\)
       echo Total paid $total sats in $totalinvoices invoice\(s\)
+      echo +++++++++++++++++++++++++++++++++++++++++++
+      echo
       echo Waiting for payments
-
    fi
    ##Wait for a invoice to come   
    inotifywait -qq -t 60 /mnt/hdd/BTCPAYSERVER/invoices/ 
