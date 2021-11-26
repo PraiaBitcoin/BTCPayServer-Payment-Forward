@@ -133,7 +133,7 @@ do
         continue
    fi
     
-   $EXEDIR/doit $TOKEN $amount $id
+   $EXEDIR/doit $TOKEN $amount "Pgto da fatura $id"
    status=$?
    if [ ! $status -eq 0 ]; then
       echo error while processing $FILE. Keeping control file and continuing

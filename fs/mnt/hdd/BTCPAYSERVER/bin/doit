@@ -124,7 +124,7 @@ login () {
 pay () {
     _host=$1
     _token=$2 
-    _invoice=$3
+    _invoice="$3"
 
     js=$(jq -c --null-input \
 		  --arg invoice "$_invoice" \
@@ -212,7 +212,7 @@ fi
 tokenPayer=$token
 #echo tokenPayer: $tokenPayer
 
-generate $hostStore $tokenStore $amount $memo
+generate $hostStore $tokenStore $amount "$memo"
 
 if [ "$payment_request" = "null" ]
 then
@@ -222,7 +222,7 @@ fi
 
 invoice=$payment_request
 
-pay $hostPayer $tokenPayer $invoice
+pay $hostPayer $tokenPayer "$invoice"
 if [ "$error" = "true" ]
 then
   echo error while paying invoice: [$errmsg]
