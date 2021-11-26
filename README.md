@@ -52,7 +52,7 @@ curl --insecure -d "{}" -X POST http://127.0.0.1:44331/log.php?store=123456789
 
 9) Install guard for loop script - add this line to /etc/rc.local, just before script "exit 0" call
 ```
-( sleep 300; /etc/rc.filtro ) &
+( sleep 300; /path/to/your/script/dir/bin/guard_btcpayserver ) &
 ```
  
 
