@@ -1,0 +1,13 @@
+#! /bin/sh
+
+EXEDIR=$(dirname $0)
+
+
+while [ true ]
+do
+  if ! /sbin/pidof loop_btcpayserver &> /dev/null
+  then
+      $EXEDIR/loop_btcpayserver
+  fi
+
+done
