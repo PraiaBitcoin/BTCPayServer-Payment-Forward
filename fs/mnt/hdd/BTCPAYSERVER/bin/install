@@ -1,6 +1,11 @@
 #! /bin/sh
 
-set -x
+#set -x
+
+apt-get install php-fpm
+apt-get install jq
+apt-get install bc
+
 
 EXEDIR=$(dirname $0)
 DEST=/mnt/hdd/BTCPAYSERVER
@@ -10,9 +15,9 @@ install -o www-data -d $DEST
 
 install -d $DEST/bin
 
-cp $EXEDIR/* $DEST/ -vf
+cp $EXEDIR/* $DEST/bin/ -vf
 
-chmod 755 $DEST/*
+chmod 755 $DEST/bin/*
 
 
 $DEST/bin/psql_query create
