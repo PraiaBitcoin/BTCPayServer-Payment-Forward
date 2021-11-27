@@ -22,9 +22,12 @@ totalinvoices=0
 while [ true ]
 do
 
-paid=0
+localpaid=0
 
 EXEDIR=$(dirname $0)
+
+QUERY=$EXEDIR/psql_query
+
 
 
 BASEDIR=/mnt/hdd/BTCPAYSERVER
@@ -32,10 +35,13 @@ INVOICES=$BASEDIR/invoices
 DONEDIR=$BASEDIR/done
 INVALID=$BASEDIR/invalid
 ONCHAIN=$BASEDIR/onchain
+DUPLICATE=$BASEDIR/duplicate
+ZERO=$BASEDIR/zero
 
 install -d $INVALID
 install -d $DONEDIR 
 install -d $ONCHAIN
+install -d $DUPLICATE
 
 if [ ! -x $EXEDIR/doit ]
 then
@@ -108,12 +114,23 @@ do
         echo $FILE does not have a valid invoice value: [$value]. Keeping control file and continuing
         continue
    fi
+   iValue=$( printf "%.0f" $(echo $value*100000000 | bc -l))
+
    amount=$( printf "%.0f" $(echo $value*$RATE*100000000 | bc -l))
+
+   if [ $amount -eq $iValue ]
+   then
+      echo $FILE resulting fee equals to zero. 
+      amount=$(echo $iValue - 1|bc -l )
+   fi
+
    echo Amount: $amount
 
    if [ ! $amount -gt 0 ]
    then 
-      echo $FILE resulting amount is not grater than 0: [$amount]. Keeping control file and continuing
+      echo $FILE resulting amount is not grater than 0: [$amount]. Moving to $ZERO
+      mv $FILE $ZERO/ 
+      mv $i $ZERO/        
       continue
    fi
 
@@ -150,8 +167,36 @@ do
         echo $FILE does not have a invoice Id: [$id]. Keeping control file and continuing
         continue
    fi
+
+	#Verificar se já foi pago...      
+
+   query=$($QUERY "select * from invoices where id = '$id' ")
+   paid=$(echo $query|jq -r .paid)
+   invoice=$(echo $query|jq -r .invoice)
+   if [ "$invoice" = "null" ] 
+   then
+      invoice=
+   else
+      echo [$FILE] has already an generated invoice: [$invoice]
+   fi
+
+
+   echo Paid result query is [$paid] 
+
+   if [ "$paid" != "null" ] && [ $paid -gt 0 ]
+   then
+        echo $FILE already paid [$paid]: [$method]. Moving file to $DUPLICATE
+        mv $FILE $DUPLICATE/ 
+        mv $i $DUPLICATE/
+        continue
+   fi        
+   
+   #exit 1;
     
-   $EXEDIR/doit $TOKEN $amount "Pgto da fatura $id"
+   $EXEDIR/doit $TOKEN $amount "Pgto da fatura $id" "$invoice" "$id"
+
+   #exit 1
+
    status=$?
    if [ ! $status -eq 0 ]; then
       echo error while processing $FILE. Keeping control file and continuing
@@ -160,15 +205,21 @@ do
    mv $FILE $DONEDIR/ 
    mv $i $DONEDIR/ 
    ((files++))
-   ((paid+=amount)) 
+   ((localpaid+=amount)) 
    ((total+=amount)) 
    ((totalinvoices++))
+
+
+
+
+
+
 done
    if [ $files -gt 0 ]
    then
       echo
       echo +++++++++++++++++++++++++++++++++++++++++++
-      echo Paid $paid sats in $files invoice\(s\)
+      echo Paid $localpaid sats in $files invoice\(s\)
       echo Total paid $total sats in $totalinvoices invoice\(s\)
       echo +++++++++++++++++++++++++++++++++++++++++++
       echo

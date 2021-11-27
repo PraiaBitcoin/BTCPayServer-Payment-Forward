@@ -1,0 +1,118 @@
+#! /bin/sh
+
+#set -x
+
+#   PSQL Query Helper
+
+execute () {
+
+ docker exec -i $(docker ps -a -q -f "name=postgres_1") psql -U postgres -d $db -c "$1"
+# exit $?
+}
+
+_execute () {
+
+ docker exec -i $(docker ps -a -q -f "name=postgres_1") psql -U postgres -d $db -c "$1"
+
+}
+
+
+createdb () {
+
+ docker exec -i $(docker ps -a -q -f "name=postgres_1") psql -U postgres -c "create database control;"
+
+ _execute "create table invoices(id varchar(80) not null)"
+
+ _execute "alter table invoices add dh timestamp not null"
+
+ _execute "alter table invoices add store varchar(80)"
+
+ _execute "alter table invoices add invoice varchar(512) not null"
+
+ _execute "alter table invoices add amount bigint not null"
+
+ _execute "alter table invoices add paid bigint"
+
+ _execute "ALTER TABLE ONLY invoices ADD CONSTRAINT PK_Invoices PRIMARY KEY (\"id\")";
+
+}
+
+
+
+
+cmd=$1
+
+exec=$2
+
+field=$3
+
+db=$4
+
+
+if [ -z "$cmd" ]
+then
+  if [ -z "$field" ]
+  then
+     echo "{\"error\", true}"
+  fi
+  exit 1
+fi
+
+if [ -z "$db" ]
+then
+  db=control
+fi
+
+if [ -z "$exec" ]
+then
+  exec=query
+fi
+
+if [ "$cmd" = "create" ]
+then
+   createdb
+   exit
+fi 
+
+
+if [ "$exec" = "query" ] || [ "$exec" = "select" ]
+then
+	ret=$(docker exec -i $(docker ps -a -q -f "name=postgres_1") psql -U postgres -d $db -c "select json_agg(t) from ($cmd) t")
+
+	status=$?
+
+        #echo $ret
+	if [ ! $status -eq 0 ]
+	then
+	  if [ -z "$field" ]
+	  then
+	  	echo "{\"error\", true}"
+          fi
+          exit 1
+	fi
+
+	result=$(echo "$ret" | grep -o -P '(?<=\ \[).*(?=\])')
+
+	if [ -z "$result" ]
+	then
+	  if [ -z "$field" ]
+	  then
+		  result="{}"
+	  fi
+        else 
+	  if [ -n "$field" ]
+ 	  then
+             result=$(echo $result| jq -r \.$field)
+          fi
+	fi
+
+	echo $result
+else
+   execute "$cmd"
+   exit $?
+
+fi
+
+
+
+

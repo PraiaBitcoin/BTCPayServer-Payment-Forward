@@ -2,13 +2,22 @@
 
 EXEDIR=$(dirname $0)
 
+killall loop_btcpayserver &> /dev/null
+
+LOCK=$EXEDIR/../lock
+
+install -d $LOCK
+
+LOCK=$LOCK/loop_btcpayserver
+
+touch $LOCK
+
 
 while [ true ]
 do
   if ! pidof loop_btcpayserver &> /dev/null
   then
-      $EXEDIR/loop_btcpayserver
+      flock --timeout=10 "$LOCK" $EXEDIR/loop_btcpayserver
       sleep 30
   fi
-
 done

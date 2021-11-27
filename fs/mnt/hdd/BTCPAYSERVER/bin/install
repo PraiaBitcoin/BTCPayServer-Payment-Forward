@@ -1,5 +1,7 @@
 #! /bin/sh
 
+set -x
+
 EXEDIR=$(dirname $0)
 DEST=/mnt/hdd/BTCPAYSERVER
 
@@ -12,6 +14,8 @@ cp $EXEDIR/* $DEST/ -vf
 
 chmod 755 $DEST/*
 
+
+$DEST/bin/psql_query create
 
 
 
