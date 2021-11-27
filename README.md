@@ -63,7 +63,7 @@ curl --insecure -d "{}" -X POST http://127.0.0.1:44331/log.php?token=123456789
 
 # User Interface Configuration Instrucions
 
-1) LNBits 
+1) LNBits Configuration
   a) Create a wallet on **LNbits**. Demo server [htpps://lnbits.jericoacoara.io:5001](htpps://lnbits.jericoacoara.io:5001)
   b) Backup the link generated for your LNBits wallet in a safe location. There are no way to recover. 
   c) Activate the extension **LndHub**
