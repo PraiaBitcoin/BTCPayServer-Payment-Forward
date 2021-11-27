@@ -35,6 +35,7 @@ apt-get install jq
 ```
 sudo su
 install -o www-data -d /mnt/hdd/BTCPAYSERVER/
+
 ```
 
 6) Run the command below to test if the files are being created at ```/mnt/hdd/BTCPAYSERVER/invoices```
@@ -48,18 +49,15 @@ curl --insecure -d "{}" -X POST http://127.0.0.1:44331/log.php?token=123456789
    b) The user will provide only the 'LNDHUB INVOICE URL' at BTCPayServer explained in the next topic
 
 
-8) BTCPayServer configuration
-
-9) Install guard for loop script - add this line to /etc/rc.local, just before script "exit 0" call
+8) Install guard for loop script - add this line to /etc/rc.local, just before script "exit 0" call
 ```
 ( sleep 300; /path/to/your/script/dir/bin/guard_btcpayserver ) &
 ```
 
-10)Some routers doe not redirect internal external ports to internal networks. To mitigate that, put an address resolving to loopback address in /etc/hosts
+9)Some routers doe not redirect internal external ports to internal networks. To mitigate that, put an address resolving to loopback address in /etc/hosts
 ```
 127.0.1.1       myNode  your.somedomain.io 
 ```
- 
 
 
-
+8) BTCPayServer configuration. There all 
