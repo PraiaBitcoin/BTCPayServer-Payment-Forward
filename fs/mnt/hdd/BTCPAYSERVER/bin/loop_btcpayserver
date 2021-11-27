@@ -30,8 +30,12 @@ EXEDIR=$(dirname $0)
 BASEDIR=/mnt/hdd/BTCPAYSERVER
 INVOICES=$BASEDIR/invoices
 DONEDIR=$BASEDIR/done
+INVALID=$BASEDIR/invalid
+ONCHAIN=$BASEDIR/onchain
 
+install -d $INVALID
 install -d $DONEDIR 
+install -d $ONCHAIN
 
 if [ ! -x $EXEDIR/doit ]
 then
@@ -91,7 +95,9 @@ do
    type=$(cat $FILE|jq -r .type)
    if [ "$type" != "InvoicePaymentSettled" ]
    then 
-        echo $FILE does not have a valid invoice type: [$type] expected [InvoicePaymentSettled]. Keeping control file and continuing
+        echo $FILE does not have a valid invoice type: [$type] expected [InvoicePaymentSettled]. Moving file to $INVALID
+        mv $FILE $INVALID/ 
+        mv $i $INVALID/        
         continue
    fi   
  
@@ -115,13 +121,25 @@ do
 
    if [ -z "$method" ] 
    then 
-        echo $FILE does not have a valid paymentMethod: [$method]. Keeping control file and continuing
+        echo $FILE does not have a valid paymentMethod: [$method]. Moving file to $INVALID
+        mv $FILE $INVALID/ 
+        mv $i $INVALID/        
+        continue
+   fi
+
+   if [ "$method" = "BTC" ] 
+   then 
+        echo $FILE is ONCHAIN payment. Moving file to $ONCHAIN
+        mv $FILE $ONCHAIN/ 
+        mv $i $ONCHAIN/        
         continue
    fi
 
    if [ ! "$method" = "BTC-LightningNetwork" ] 
    then 
-        echo $FILE does not have BTC-LightningNetwork payment method: [$method]. Keeping control file and continuing
+        echo $FILE does not have a recognized paymentMethod: [$method]. Moving file to $INVALID
+        mv $FILE $INVALID/ 
+        mv $i $INVALID/        
         continue
    fi       
 
