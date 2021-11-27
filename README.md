@@ -79,9 +79,9 @@ c) Activate the extension **LndHub**
   
 
 3) BTCPayServer 
-  a) Create an account on BTCPayServer. Demo server htpps://btcpay.jericoacoara.io
-  b) Create a store
-  c) Setup to use the Lightning Wallet from the Local Node 
-  d) At Checkout Appearance select offchain 
+  a. Create an account on BTCPayServer. Demo server htpps://btcpay.jericoacoara.io
+  b. Create a store
+  c. Setup to use the Lightning Wallet from the Local Node 
+  d. At Checkout Appearance select offchain 
 
 13) 
