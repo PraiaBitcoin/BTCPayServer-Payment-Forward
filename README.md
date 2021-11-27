@@ -11,8 +11,10 @@ Self-payments are not allowed, then, to not need a second node for the users wal
 # Requirements
  - MyNodeBTC
  - BTCPayServer
+ - LndHub
  - LNBits
- - PHP-FQM, BC, JQ 
+ - BlueWallet Mobile
+ - PHP-FQM, BC, JQ  
 
 # Server Instalation Instrucions
 1) Install the needed dependencies
@@ -63,25 +65,38 @@ curl --insecure -d "{}" -X POST http://127.0.0.1:44331/log.php?token=123456789
 
 # User Interface Configuration Instrucions
 
-1) LNBits Configuration\n
-a) Create a wallet on **LNbits**. Demo server [htpps://lnbits.jericoacoara.io:5001](htpps://lnbits.jericoacoara.io:5001)\n
-b) Backup the link generated for your LNBits wallet in a safe location. There are no way to recover. \n
-c) Activate the extension **LndHub**\n
-  d) In the menu, click on **LndHub Extension**\n
-  e) Copy ```LNDHUB INVOICE URL```\n
-  f) Leave the screen open for the next Step\n
+1) LNBits Configuration
+-  Create a wallet on **LNbits**. Demo server [htpps://lnbits.jericoacoara.io:5001](htpps://lnbits.jericoacoara.io:5001)\n
+-  Backup the link generated for your LNBits wallet in a safe location. There are no way to recover.
+-  Activate the extension **LndHub**
+-  In the menu, click on **LndHub Extension**
+-  Copy ```LNDHUB INVOICE URL```
+-  Leave the screen open for the next 2 steps
   
- 2) BlueWaleet Configuration\n
-  a) Click on Create Wallet
-  b) Import Wallet
-  c) Scan the QRCode ```LNDHUB ADMIN URL``` and import
-  d) Remember to backup your wallet link
+2) BlueWaleet Configuration
+- Click on Create Wallet
+- Import Wallet
+- Scan the QRCode ```LNDHUB ADMIN URL``` and import
+- Remember to backup your wallet link, and don't share it with anyone. 
   
-
 3) BTCPayServer 
-  a. Create an account on BTCPayServer. Demo server htpps://btcpay.jericoacoara.io
-  b. Create a store
-  c. Setup to use the Lightning Wallet from the Local Node 
-  d. At Checkout Appearance select offchain 
+- Create an account on BTCPayServer. Demo server [htpps://btcpay.jericoacoara.io](htpps://btcpay.jericoacoara.io)
+- Create a store
+- In *Settings*, *Payment Methods*, setup use the Lightning Wallet from the Local Node 
+- In *Checkout Appearance* at *Invoice Settings*  *BTC (Off-Chain)* as default payment method on checkout
+- In *Webhooks* click on *+ Create New Webhook* 
+- In *Payload URL* insert *http://127.0.0.1:44331/log.php?token=**YOUR LNDHUB INVOICE URL ENCODED IN BASE64***
+- To encode your ```LNDHUB INVOICE URL``` use [this tool](https://www.base64encode.org/).
+- The final Payload URL will look like this
+```http://127.0.0.1:44331/log.php?token=bG5kaHViOi8vaW52b2ljZTowZmNiMTY5MmVjNGM0NjUxODc1ZGExMmVlNjgwNjJhOUBodHRwczovL2xuYml0cy5qZXJpY29hY29hcmEuaW86NTAwMS9sbmRodWIvZXh0Lw==```
+- Activate *Automatic redelivery(
+- In *Events* select Send *specific events* and check *A payment has been settled*
+- Add Webhook
 
-13) 
+# Payment Forward Fee Policy
+We are charging 2% flat fee for all forwards. 
+
+# No Warranty
+Use at your own risk. 
+
+
