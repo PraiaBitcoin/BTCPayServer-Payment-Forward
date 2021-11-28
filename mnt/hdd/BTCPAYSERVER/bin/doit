@@ -13,6 +13,23 @@ then
    . $BASEDIR/conf/payer.conf
 fi
 
+PAYERINVOICEFILE=$BASEDIR/conf/payer_invoice
+
+if [ -f $PAYERINVOICEFILE ]
+then
+ . $PAYERINVOICEFILE
+fi
+
+if [ "$PAYERINVOICE" = "1" ]
+then
+      PAYERINVOICE=""
+fi
+
+if [ -z "$CHANNELS" ]
+then
+   CHANNELS="0"
+fi
+
 tokenStore=$1
 
 
@@ -27,6 +44,15 @@ originalAmount=$3
 memo=$4
 oldInvoice=$5
 paymentId=$6
+storeId=$7
+
+if [ -z "$storeId" ]
+then
+   echo you have to inform a store Id
+   exit 1
+fi
+
+
 
 if [ -z "$paymentId" ]
 then
@@ -46,13 +72,12 @@ then
    exit 1
 fi
 
-
-
 if [ -z "$memo" ]
 then
    echo you have to inform a memo
    exit 1
 fi
+
 
 parse () {
    error=$(echo $ret|jq .error)
@@ -61,9 +86,46 @@ parse () {
 
 
 payByLND () {
-	_invoice="$1"
-        lncli --macaroonpath=/mnt/hdd/mynode/lnd/data/chain/bitcoin/mainnet/admin.macaroon --rpcserver=localhost:10009 --lnddir=/mnt/hdd/mynode/lnd   \
-		payinvoice -f --allow_self_payment --fee_limit 0 $_invoice
+set -x
+       _invoice="$1"
+
+       echo PAYERINVOICE=\"$_invoice\" > $PAYERINVOICEFILE
+
+       echo invoice to pay bylncli \[$_invoice\]
+
+
+       for channel in $CHANNELS
+       do
+        if [ -n "$channel" ] && [ $channel != '0' ]
+        then
+            channel=\-\-outgoing_chan_id\ $channel
+        fi
+
+        ret=$(lncli --macaroonpath=/mnt/hdd/mynode/lnd/data/chain/bitcoin/mainnet/admin.macaroon --rpcserver=localhost:10009 --lnddir=/mnt/hdd/mynode/lnd payinvoice -f --allow_self_payment --fee_limit 0 $channel "$_invoice" &2>1)
+
+        status=$?
+
+
+        if echo "$ret" | grep "invoice is already paid" &> /dev/null
+        then
+            echo "Already paid"
+            status=0
+        fi
+
+        if [ $status -eq 0 ]
+        then
+           echo -n > $PAYERINVOICEFILE
+         break
+      fi
+
+       done
+
+set +x
+
+#return
+#	_invoice="$1"
+ #       lncli --macaroonpath=/mnt/hdd/mynode/lnd/data/chain/bitcoin/mainnet/admin.macaroon --rpcserver=localhost:10009 --lnddir=/mnt/hdd/mynode/lnd   \
+#		payinvoice -f --allow_self_payment --fee_limit 0 $_invoice
 }
 
 
@@ -284,18 +346,27 @@ then
 fi
 
 
-if [ $amount -gt $balance ]
+if [ $(echo $amount*2 | bc -l) -gt $balance ]
 then
    echo "Amount greater than balance... Trying to feed wallet"
 
-   generate $hostPayer $tokenPayer 100000 "Payer recharge"
+   payment_request=$PAYERINVOICE
+   echo before ["$PAYERINVOICE"] ["$payment_request"]
 
-   if [ "$payment_request" = "null" ]
+   if [ -z "$PAYERINVOICE" ]
    then
-     echo "Could not get invoice... [$ret]"
-     exit 1
+
+     generate $hostPayer $tokenPayer 100000 "Payer recharge"
+
+     if [ "$payment_request" = "null" ]
+     then
+       echo "Could not get invoice... [$ret]"
+       exit 1
+     fi
+     echo generated PAYER invoice ["$payment_request"]
+   else
+     echo Previous PAYER invoice  ["$payment_request"]
    fi
-   echo generated PAYER invoice [$payment_request]
 
    payByLND "$payment_request"
 
@@ -314,7 +385,7 @@ then
      exit 1
    fi
    echo generated invoice [$payment_request]
-   $QUERY "insert into invoices(id,dh,amount,invoice,originalAmount,fee) values ('$paymentId','now',$amount, '$payment_request', $originalAmount, $(echo $originalAmount-$amount|bc -l ) )" insert
+   $QUERY "insert into invoices(id,dh,amount,invoice,originalAmount,fee, store) values ('$paymentId','now',$amount, '$payment_request', $originalAmount, $(echo $originalAmount-$amount|bc -l ), '$storeId' )" insert
    #exit 1
 
 else

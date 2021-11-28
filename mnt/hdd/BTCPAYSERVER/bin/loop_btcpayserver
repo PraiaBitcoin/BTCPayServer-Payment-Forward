@@ -102,6 +102,8 @@ do
 	# wait some time until some writes are done
    sleep 2
 
+   storeId=$(cat $FILE|jq -r .storeId)
+
    type=$(cat $FILE|jq -r .type)
    if [ "$type" != "InvoicePaymentSettled" ]
    then 
@@ -204,14 +206,14 @@ do
    
    #exit 1;
     
-   $EXEDIR/doit $TOKEN $amount $iValue "Pgto da fatura $id" "$invoice" "$id"
+   $EXEDIR/doit $TOKEN $amount $iValue "Pgto da fatura $id" "$invoice" "$id" "$storeId"
 
    status=$?
 
    if [ $status -eq 5 ]; then
       #rety
 
-      $EXEDIR/doit $TOKEN $amount $iValue "Pgto da fatura $id" "$invoice" "$id"
+      $EXEDIR/doit $TOKEN $amount $iValue "Pgto da fatura $id" "$invoice" "$id" "$storeId"
 
       status=$?
    fi
