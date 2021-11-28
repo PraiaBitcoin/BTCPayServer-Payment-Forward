@@ -1,4 +1,4 @@
-# BtcPayServer Payment Forward
+# BTCPayServer Payment Forward
 At Bitcoin Beach Brazil, we are running a [MyNodeBTC](https://mynodebtc.com) with [BTCPayServer](https://btcpayserver.org) as PoS for small businesses and *Virtual BTC Hats* for our local street artists. This script is useful when you need receive funds in your node and forward to other wallets automaticly. 
 
 # How it works
