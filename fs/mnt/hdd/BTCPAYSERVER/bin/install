@@ -12,6 +12,8 @@ DEST=/mnt/hdd/BTCPAYSERVER
 
 
 install -o www-data -d $DEST
+install -o www-data -d $DEST/invoices
+
 
 install -d $DEST/bin
 install -d $DEST/conf
