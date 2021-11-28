@@ -183,13 +183,18 @@ do
 
    echo Paid result query is [$paid] 
 
-   if [ "$paid" != "null" ] && [ $paid -gt 0 ]
+   if [ "$paid" = "null" ] || [ "$paid" = "" ]
    then
+      paid=0
+   else 
+     if [ $paid -gt 0 ]
+     then
         echo $FILE already paid [$paid]: [$method]. Moving file to $DUPLICATE
         mv $FILE $DUPLICATE/ 
         mv $i $DUPLICATE/
         continue
-   fi        
+     fi        
+   fi
    
    #exit 1;
     
