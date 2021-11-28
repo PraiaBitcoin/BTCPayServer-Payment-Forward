@@ -25,10 +25,7 @@ then
       PAYERINVOICE=""
 fi
 
-if [ -z "$CHANNELS" ]
-then
-   CHANNELS="0"
-fi
+PREFERENCIALCHANNELS="PREFERENCIALCHANNELS 0"
 
 tokenStore=$1
 
@@ -94,7 +91,7 @@ set -x
        echo invoice to pay bylncli \[$_invoice\]
 
 
-       for channel in $CHANNELS
+       for channel in $PREFERENCIALCHANNELS
        do
         if [ -n "$channel" ] && [ $channel != '0' ]
         then
