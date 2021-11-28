@@ -171,8 +171,8 @@ do
 	#Verificar se já foi pago...      
 
    query=$($QUERY "select * from invoices where id = '$id' ")
-   paid=$(echo $query|jq -r .paid)
-   invoice=$(echo $query|jq -r .invoice)
+   paid=$(echo $query|jq -r .[0].paid)
+   invoice=$(echo $query|jq -r .[0].invoice)
    if [ "$invoice" = "null" ] 
    then
       invoice=

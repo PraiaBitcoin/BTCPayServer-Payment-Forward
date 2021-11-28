@@ -31,8 +31,6 @@ then
    exit 1
 fi
 
-
-
 if [ -z "$amount" ]
 then
    echo you have to inform an amount
@@ -45,16 +43,20 @@ then
    exit 1
 fi
 
-if [ ! -f /usr/bin/jq ]
-then
-	# install jq
-   apt-get install jq
-fi
-
 parse () {
    error=$(echo $ret|jq .error)
    errmsg=$(echo $ret|jq .message)
 }
+
+
+payByLND () {
+	_invoice="$1"
+        lncli --macaroonpath=/mnt/hdd/mynode/lnd/data/chain/bitcoin/mainnet/admin.macaroon --rpcserver=localhost:10009 --lnddir=/mnt/hdd/mynode/lnd   \
+		payinvoice -f --allow_self_payment --fee_limit 0 $_invoice
+
+
+}
+
 
 parsetoken () {
    token=$1
@@ -90,6 +92,28 @@ post () {
 	parse "$ret"
 #echo $ret
 }
+
+get () {
+
+	_url=$1
+	_token=$2
+	tk=''
+	if [ -n "$_token" ]
+	then
+		_tk=Authorization:\ Bearer\ $_token
+	fi
+        ret=$(curl -ss --insecure -H 'Content-Type: application/json' -H "$_tk" -X GET "$_url" )
+	status=$?
+        if [ ! $status -eq 0 ]; then
+   	     error='Unknow'
+	     errmsg=$ret
+	     exit
+	fi   
+
+	parse "$ret"
+}
+
+
 
 generate () {
    _host=$1
@@ -131,6 +155,22 @@ login () {
    	token=$(echo $ret | jq -r .access_token )
 
 
+}
+
+getBalance () {
+    _host=$1
+    _token=$2 
+
+    cmd=balance
+    url=$_host$cmd
+    get $url $_token
+    echo $ret
+    balance=$(echo $ret | jq -r .BTC.AvailableBalance )
+
+    if [ "$balance" = "null" ] || [ "$balance" = "" ]
+    then
+       balance=0
+    fi
 }
 
 pay () {
@@ -176,6 +216,7 @@ then
    echo Invalid PAYER token
    exit 1
 fi
+
 
 parsetoken $(echo $tokenStore|base64 --decode)
 userStore=$user
@@ -223,6 +264,34 @@ fi
 
 tokenPayer=$token
 #echo tokenPayer: $tokenPayer
+
+getBalance $hostPayer $tokenPayer
+
+if [ "$error" = "true" ]
+then
+  echo error: [$errmsg]
+  exit 1
+fi
+
+
+if [ $amount -gt $balance ]
+then
+   echo "Amount greater than balance... Trying to feed wallet"
+
+   generate $hostPayer $tokenPayer 100000 "Payer recharge"
+
+   if [ "$payment_request" = "null" ]
+   then
+     echo "Could not get invoice... [$ret]"
+     exit 1
+   fi
+   echo generated PAYER invoice [$payment_request]
+
+   payByLND "$payment_request"
+
+   exit 1
+fi
+
 
 if [ -z "$oldInvoice" ]
 then

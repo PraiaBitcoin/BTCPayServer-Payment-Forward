@@ -77,7 +77,7 @@ fi
 
 if [ "$exec" = "query" ] || [ "$exec" = "select" ]
 then
-	ret=$(docker exec -i $(docker ps -a -q -f "name=postgres_1") psql -U postgres -d $db -c "select json_agg(t) from ($cmd) t")
+	ret=$(docker exec -i $(docker ps -a -q -f "name=postgres_1") psql -U postgres -d $db -R \  -t -c "select json_agg(t) from ($cmd) t")
 
 	status=$?
 
@@ -91,18 +91,21 @@ then
           exit 1
 	fi
 
-	result=$(echo "$ret" | grep -o -P '(?<=\ \[).*(?=\])')
+	#result=$(echo "$ret" | grep -o -P '(?<=\ \[).*(?=\])')
+        result=$ret
+
+	#BUG: multiple rows are separeted by +
 
 	if [ -z "$result" ]
 	then
 	  if [ -z "$field" ]
 	  then
-		  result="{}"
+		  result="[{}]"
 	  fi
         else 
 	  if [ -n "$field" ]
  	  then
-             result=$(echo $result| jq -r \.$field)
+             result=$(echo $result| jq -r .[0].$field)
           fi
 	fi
 
