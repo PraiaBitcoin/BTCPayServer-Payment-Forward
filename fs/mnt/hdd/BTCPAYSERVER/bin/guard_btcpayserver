@@ -12,6 +12,8 @@ LOCK=$LOCK/loop_btcpayserver
 
 touch $LOCK
 
+#echo Verifying db
+$EXEDIR/psql_query create
 
 while [ true ]
 do

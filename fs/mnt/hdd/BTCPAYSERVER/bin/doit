@@ -1,4 +1,6 @@
-#! /bin/sh
+#! /bin/bash
+
+set -o noglob
 
 #set -x
 
@@ -21,9 +23,10 @@ then
 fi
 
 amount=$2
-memo=$3
-oldInvoice=$4
-paymentId=$5
+originalAmount=$3
+memo=$4
+oldInvoice=$5
+paymentId=$6
 
 if [ -z "$paymentId" ]
 then
@@ -36,6 +39,14 @@ then
    echo you have to inform an amount
    exit 1
 fi
+
+if [ -z "$originalAmount" ]
+then
+   echo you have to inform an original amount
+   exit 1
+fi
+
+
 
 if [ -z "$memo" ]
 then
@@ -53,8 +64,6 @@ payByLND () {
 	_invoice="$1"
         lncli --macaroonpath=/mnt/hdd/mynode/lnd/data/chain/bitcoin/mainnet/admin.macaroon --rpcserver=localhost:10009 --lnddir=/mnt/hdd/mynode/lnd   \
 		payinvoice -f --allow_self_payment --fee_limit 0 $_invoice
-
-
 }
 
 
@@ -85,7 +94,8 @@ post () {
 	status=$?
         if [ ! $status -eq 0 ]; then
    	     error='Unknow'
-	     errmsg=$ret
+	     errmsg="$ret: error while reading from $_url"
+             echo $errmsg             
 	     exit
 	fi   
 
@@ -289,7 +299,8 @@ then
 
    payByLND "$payment_request"
 
-   exit 1
+      #retry
+   exit 5
 fi
 
 
@@ -303,7 +314,7 @@ then
      exit 1
    fi
    echo generated invoice [$payment_request]
-   $QUERY "insert into invoices(id,dh,amount,invoice) values ('$paymentId','now',$amount, '$payment_request')" insert
+   $QUERY "insert into invoices(id,dh,amount,invoice,originalAmount,fee) values ('$paymentId','now',$amount, '$payment_request', $originalAmount, $(echo $originalAmount-$amount|bc -l ) )" insert
    #exit 1
 
 else
