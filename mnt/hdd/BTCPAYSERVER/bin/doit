@@ -25,7 +25,7 @@ then
       PAYERINVOICE=""
 fi
 
-PREFERENCIALCHANNELS="PREFERENCIALCHANNELS 0"
+PREFERENCIALCHANNELS="$PREFERENCIALCHANNELS 0"
 
 tokenStore=$1
 
@@ -48,8 +48,6 @@ then
    echo you have to inform a store Id
    exit 1
 fi
-
-
 
 if [ -z "$paymentId" ]
 then
@@ -81,16 +79,28 @@ parse () {
    errmsg=$(echo $ret|jq .message)
 }
 
-
 payByLND () {
-set -x
+#set -x
        _invoice="$1"
+       controla="$2"
+       maxfee=$3
 
-       echo PAYERINVOICE=\"$_invoice\" > $PAYERINVOICEFILE
+       if [ -n "$maxfee" ]
+       then
+           maxfee="----fee_limit $maxfee"
+       fi
 
-       echo invoice to pay bylncli \[$_invoice\]
 
+       if [ -z "$controla" ]; then
 
+         echo PAYERINVOICE=\"$_invoice\" > $PAYERINVOICEFILE
+
+         echo invoice to pay bylncli \[$_invoice\]
+
+       fi
+      
+       # set error
+       error="true"
        for channel in $PREFERENCIALCHANNELS
        do
         if [ -n "$channel" ] && [ $channel != '0' ]
@@ -98,7 +108,7 @@ set -x
             channel=\-\-outgoing_chan_id\ $channel
         fi
 
-        ret=$(lncli --macaroonpath=/mnt/hdd/mynode/lnd/data/chain/bitcoin/mainnet/admin.macaroon --rpcserver=localhost:10009 --lnddir=/mnt/hdd/mynode/lnd payinvoice -f --allow_self_payment --fee_limit 0 $channel "$_invoice" &2>1)
+        ret=$(lncli --macaroonpath=/mnt/hdd/mynode/lnd/data/chain/bitcoin/mainnet/admin.macaroon --rpcserver=localhost:10009 --lnddir=/mnt/hdd/mynode/lnd payinvoice $maxfee -f --allow_self_payment $channel "$_invoice" &2>1)
 
         status=$?
 
@@ -111,18 +121,15 @@ set -x
 
         if [ $status -eq 0 ]
         then
-           echo -n > $PAYERINVOICEFILE
-         break
-      fi
+          error=
+          [ -z "$controla" ] && echo -n > $PAYERINVOICEFILE
+          break
+        fi
 
        done
 
-set +x
+#set +x
 
-#return
-#	_invoice="$1"
- #       lncli --macaroonpath=/mnt/hdd/mynode/lnd/data/chain/bitcoin/mainnet/admin.macaroon --rpcserver=localhost:10009 --lnddir=/mnt/hdd/mynode/lnd   \
-#		payinvoice -f --allow_self_payment --fee_limit 0 $_invoice
 }
 
 
@@ -342,8 +349,7 @@ then
   exit 1
 fi
 
-
-if [ $(echo $amount*2 | bc -l) -gt $balance ]
+if [ $amount -lt 100000 ] && [ $(echo $amount*2 | bc -l) -gt $balance ]
 then
    echo "Amount greater than balance... Trying to feed wallet"
 
@@ -391,7 +397,15 @@ fi
 
 invoice=$payment_request
 
-pay $hostPayer $tokenPayer "$invoice"
+if [ $amount -lt 100000 ]
+then
+   echo Paying by lnbits
+   pay $hostPayer $tokenPayer "$invoice"
+else
+   echo Paying by lncli
+   payByLND "$invoice" N 
+fi
+
 
 if [ "$error" = "true" ]
 then
