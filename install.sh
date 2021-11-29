@@ -6,19 +6,15 @@ apt-get install php-fpm
 apt-get install jq
 apt-get install bc
 
-
-EXEDIR=$(dirname $0)
 DEST=/mnt/hdd/BTCPAYSERVER
-
+EXEDIR=$(dirname $0)$DEST
 
 install -o www-data -d $DEST
 install -o www-data -d $DEST/invoices
 
-
 install -d $DEST/bin
 install -d $DEST/conf
 touch $DEST/conf/payer.conf
-
 
 cp $EXEDIR/* $DEST/bin/ -vf
 
