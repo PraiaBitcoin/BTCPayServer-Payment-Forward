@@ -79,6 +79,21 @@ parse () {
    errmsg=$(echo $ret|jq .message)
 }
 
+lncliCMD () {
+
+        ret=$(lncli --macaroonpath=/mnt/hdd/mynode/lnd/data/chain/bitcoin/mainnet/admin.macaroon --rpcserver=localhost:10009 --lnddir=/mnt/hdd/mynode/lnd $* &2>1)
+
+        status=$?
+
+        if [ ! $status -eq 0 ]
+        then
+          error="lncli error"
+          errmsg="$ret"
+        fi
+        echo "$ret"
+
+}
+
 payByLND () {
 #set -x
        _invoice="$1"
@@ -95,10 +110,10 @@ payByLND () {
 
          echo PAYERINVOICE=\"$_invoice\" > $PAYERINVOICEFILE
 
-         echo invoice to pay bylncli \[$_invoice\]
-
        fi
-      
+
+       echo invoice to pay bylncli \[$_invoice\]
+     
        # set error
        error="true"
        for channel in $PREFERENCIALCHANNELS

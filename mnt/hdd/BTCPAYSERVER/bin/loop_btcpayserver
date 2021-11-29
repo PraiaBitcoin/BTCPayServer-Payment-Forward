@@ -30,15 +30,6 @@ lncliCMD () {
 total=0
 totalinvoices=0
 
-while [ true ]
-do
-
-localpaid=0
-
-EXEDIR=$(dirname $0)
-
-QUERY=$EXEDIR/psql_query
-
 LOCALNODE=$(lncliCMD getinfo)
 
 if [ "$error" = "true" ]
@@ -58,7 +49,14 @@ then
    exit 1
 fi
 
-exit
+while [ true ]
+do
+
+localpaid=0
+
+EXEDIR=$(dirname $0)
+
+QUERY=$EXEDIR/psql_query
 
 
 BASEDIR=/mnt/hdd/BTCPAYSERVER
@@ -66,6 +64,7 @@ INVOICES=$BASEDIR/invoices
 DONEDIR=$BASEDIR/done
 INVALID=$BASEDIR/invalid
 ONCHAIN=$BASEDIR/onchain
+NONCUSTODIAL=$BASEDIR/noncustodial
 DUPLICATE=$BASEDIR/duplicate
 ZERO=$BASEDIR/zero
 
@@ -73,6 +72,7 @@ install -d $INVALID
 install -d $DONEDIR 
 install -d $ONCHAIN
 install -d $DUPLICATE
+install -d $NONCUSTODIAL
 
 if [ ! -x $EXEDIR/doit ]
 then
@@ -141,7 +141,8 @@ do
         mv $i $INVALID/        
         continue
    fi   
- 
+
+
    value=$(cat $FILE|jq -r .payment.value)
 
    if [ -z "$value" ] 
@@ -151,6 +152,62 @@ do
    fi
    iValue=$( printf "%.0f" $(echo $value*100000000 | bc -l))
 
+
+	# todo
+        #check if it is a donation pay
+
+   #if it is not donation
+      #check if invoice was paid to us
+      storeinvoice=$(cat $FILE|jq -r .payment.destination)
+      echo $FILE paid invoice is $storeinvoice
+      if [ -z "$storeinvoice" ]
+      then
+         echo $FILE does not have a valid destination invoice. Moving file to $INVALID
+         mv $FILE $INVALID/ 
+         mv $i $INVALID/        
+	 continue
+      fi
+
+      payreq=$(lncliCMD decodepayreq "$storeinvoice")
+      destination=$(echo "$payreq"|jq -r .destination)
+      echo $FILE destination invoice is $destination
+       		
+      if [ "$destination" != "$LOCALNODE" ]
+      then     
+         echo $FILE payed invoice is not to our node. Moving file to $NONCUSTODIAL
+         mv $FILE $NONCUSTODIAL/ 
+         mv $i $NONCUSTODIAL/        
+	 continue
+      fi
+      phash=$(echo "$payreq"|jq -r .payment_hash)
+      finalinvoice=$(lncliCMD lookupinvoice "$phash")
+      isPaid=$(echo "$finalinvoice"|jq -r .state)
+      echo $FILE invoice state is $isPaid
+
+      if [ "$isPaid" != "SETTLED" ]
+      then
+         echo $FILE invoice is not in SETTLED state. Moving file to $INVALID
+         mv $FILE $INVALID/ 
+         mv $i $INVALID/        
+	 continue
+      fi
+      
+         #check for paid amount	
+      paidAmount=$(printf "%.0f" $(echo "$finalinvoice"|jq -r .amt_paid_sat))
+
+      echo $FILE invoice paid amount is $paidAmount sats. Required is $iValue sats 
+
+      if [ ! $paidAmount -eq $iValue   ]
+      then
+         echo $FILE invoice does not have same amount paid. Moving file to $INVALID
+         mv $FILE $INVALID/ 
+         mv $i $INVALID/        
+	 continue
+      fi
+
+      	
+   #end of non donation
+ 
    amount=$( printf "%.0f" $(echo $iValue*$RATE | bc -l))
 
    if [ $amount -eq $iValue ]
