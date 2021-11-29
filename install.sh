@@ -7,7 +7,7 @@ apt-get install jq
 apt-get install bc
 
 DEST=/mnt/hdd/BTCPAYSERVER
-EXEDIR=$(dirname $0)$DEST
+EXEDIR=$(dirname $0)$DEST/bin
 
 install -o www-data -d $DEST
 install -o www-data -d $DEST/invoices
@@ -22,7 +22,4 @@ chmod 755 $DEST/bin/*
 
 
 $DEST/bin/psql_query create
-
-
-
 
