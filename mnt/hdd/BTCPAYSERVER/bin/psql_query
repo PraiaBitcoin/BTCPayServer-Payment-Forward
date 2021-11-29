@@ -41,6 +41,22 @@ createdb () {
 
  _execute "ALTER TABLE ONLY invoices ADD CONSTRAINT PK_Invoices PRIMARY KEY (\"id\")";
 
+ _execute "create table stores(id varchar(80) not null)"
+
+ _execute "alter table stores add name varchar(100) not null"
+
+ _execute "ALTER TABLE ONLY stores ADD CONSTRAINT PK_stores PRIMARY KEY (\"id\")";
+
+ _execute "create table charity(id varchar(200) not null)"
+
+ _execute "alter table charity add rate double precision not null"
+
+ _execute "alter table charity add url text"
+
+ _execute "ALTER TABLE ONLY charity ADD CONSTRAINT PK_charity PRIMARY KEY (\"id\")";
+
+  
+
 }
 
 
