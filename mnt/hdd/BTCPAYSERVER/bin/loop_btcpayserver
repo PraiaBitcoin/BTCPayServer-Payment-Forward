@@ -1,20 +1,29 @@
 #! /bin/bash
 
+
 set -o noglob
 
 #set -x
 
-if [ ! -f /usr/bin/jq ]
-then
-	# install jq
-   apt-get install jq
-fi
 
-if [ ! /usr/bin/bc ]
-then
-	# install bc
-   apt-get install bc
-fi
+lncliCMD () {
+
+        error="false"
+        errmsg=
+
+        ret=$(lncli --macaroonpath=/mnt/hdd/mynode/lnd/data/chain/bitcoin/mainnet/admin.macaroon --rpcserver=localhost:10009 --lnddir=/mnt/hdd/mynode/lnd $* 2>1)
+
+        status=$?
+
+        if [ ! $status -eq 0 ]
+        then
+          error="true"
+          errmsg="$ret"
+          echo "{"error": true, "message": "$ret" }"
+          return 
+        fi
+        echo "$ret"
+}
 
    echo Waiting for payments
 
@@ -30,6 +39,26 @@ EXEDIR=$(dirname $0)
 
 QUERY=$EXEDIR/psql_query
 
+LOCALNODE=$(lncliCMD getinfo)
+
+if [ "$error" = "true" ]
+then
+   echo "Can not get info about local node"
+   exit 1
+fi
+
+
+LOCALNODE=$(echo "$LOCALNODE"|jq -r .identity_pubkey)
+
+echo Localnode is $LOCALNODE
+
+if [ -z "$LOCALNODE" ] || [ "$LOCALNODE" = "null" ]
+then
+   echo "Can not get info about local node"
+   exit 1
+fi
+
+exit
 
 
 BASEDIR=/mnt/hdd/BTCPAYSERVER
