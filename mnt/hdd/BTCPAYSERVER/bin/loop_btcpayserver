@@ -290,6 +290,16 @@ do
      fi        
    fi
    
+     #generate fees donations   
+   $EXEDIR/splitfee.sh $(echo $iValue-$amount|bc -l) "$id" 
+
+   status=$?
+
+   if [ ! $status -eq 0 ]; then
+      echo error while processing fees for $FILE. Keeping control file and continuing
+      continue
+   fi   
+
    #exit 1;
     
    $EXEDIR/doit $TOKEN $amount $iValue "Pgto da fatura $id" "$invoice" "$id" "$storeId"
