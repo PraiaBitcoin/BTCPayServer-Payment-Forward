@@ -2,8 +2,19 @@
 
 
 set -o noglob
-
 #set -x
+
+logit () {
+   echo $*
+   if [ -n "$FILELOG" ]
+   then
+      echo $* >> $FILELOG
+   fi
+}  
+
+movefiles () {
+	return
+}
 
 
 lncliCMD () {
@@ -25,7 +36,7 @@ lncliCMD () {
         echo "$ret"
 }
 
-   echo Waiting for payments
+FILELOG=
 
 total=0
 totalinvoices=0
@@ -48,6 +59,9 @@ then
    echo "Can not get info about local node"
    exit 1
 fi
+
+echo Waiting for payments
+
 
 while [ true ]
 do
@@ -110,7 +124,9 @@ do
         continue
    fi 
 
-  echo Processing file $i
+   FILELOG="$i.log"  
+   echo -n > "$FILELOG"
+   logit "Processing file $i"
 
    TOKEN=""
    FILE=""
@@ -138,6 +154,7 @@ do
    then 
         echo $FILE does not have a valid invoice type: $type expected [InvoicePaymentSettled]. Moving file to $INVALID
         mv $FILE $INVALID/ 
+        mv $FILELOG $INVALID/        
         mv $i $INVALID/        
         continue
    fi   
@@ -163,6 +180,7 @@ do
       if [ -z "$storeinvoice" ]
       then
          echo $FILE does not have a valid destination invoice. Moving file to $INVALID
+         mv $FILELOG $INVALID/        
          mv $FILE $INVALID/ 
          mv $i $INVALID/        
 	 continue
@@ -175,6 +193,7 @@ do
       if [ "$destination" != "$LOCALNODE" ]
       then     
          echo $FILE payed invoice is not to our node. Moving file to $NONCUSTODIAL
+         mv $FILELOG $NONCUSTODIAL/        
          mv $FILE $NONCUSTODIAL/ 
          mv $i $NONCUSTODIAL/        
 	 continue
@@ -187,6 +206,7 @@ do
       if [ "$isPaid" != "SETTLED" ]
       then
          echo $FILE invoice is not in SETTLED state. Moving file to $INVALID
+         mv $FILELOG $INVALID/        
          mv $FILE $INVALID/ 
          mv $i $INVALID/        
 	 continue
@@ -200,6 +220,7 @@ do
       if [ ! $paidAmount -eq $iValue   ]
       then
          echo $FILE invoice does not have same amount paid. Moving file to $INVALID
+         mv $FILELOG $INVALID/        
          mv $FILE $INVALID/ 
          mv $i $INVALID/        
 	 continue
@@ -221,6 +242,7 @@ do
    if [ ! $amount -gt 0 ]
    then 
       echo $FILE resulting amount is not grater than 0: $amount. Moving to $ZERO
+      mv $FILELOG $ZERO/        
       mv $FILE $ZERO/ 
       mv $i $ZERO/        
       continue
@@ -231,6 +253,7 @@ do
    if [ -z "$method" ] 
    then 
         echo $FILE does not have a valid paymentMethod: $method. Moving file to $INVALID
+        mv $FILELOG $INVALID/        
         mv $FILE $INVALID/ 
         mv $i $INVALID/        
         continue
@@ -239,6 +262,7 @@ do
    if [ "$method" = "BTC" ] 
    then 
         echo $FILE is ONCHAIN payment. Moving file to $ONCHAIN
+        mv $FILELOG $ONCHAIN/        
         mv $FILE $ONCHAIN/ 
         mv $i $ONCHAIN/        
         continue
@@ -247,6 +271,7 @@ do
    if [ ! "$method" = "BTC-LightningNetwork" ] 
    then 
         echo $FILE does not have a recognized paymentMethod: $method. Moving file to $INVALID
+        mv $FILELOG $INVALID/        
         mv $FILE $INVALID/ 
         mv $i $INVALID/        
         continue
@@ -284,6 +309,7 @@ do
      if [ $paid -gt 0 ]
      then
         echo $FILE already paid $paid: $method. Moving file to $DUPLICATE
+        mv $FILELOG $DUPLICATE/        
         mv $FILE $DUPLICATE/ 
         mv $i $DUPLICATE/
         continue
@@ -319,6 +345,7 @@ do
       echo error while processing $FILE. Keeping control file and continuing
       continue
    fi   
+   mv $FILELOG $DONEDIR/        
    mv $FILE $DONEDIR/ 
    mv $i $DONEDIR/ 
    ((files++))
