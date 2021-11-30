@@ -42,6 +42,7 @@ memo=$4
 oldInvoice=$5
 paymentId=$6
 storeId=$7
+isDonation=$8
 
 if [ -z "$storeId" ]
 then
@@ -402,8 +403,13 @@ then
      echo "Could not get invoice... [$ret]"
      exit 1
    fi
+   donation=N
+   if [ $isDonation -eq 1 ]
+   then
+      donation=S
+   fi
    echo generated invoice [$payment_request]
-   $QUERY "insert into invoices(id,dh,amount,invoice,originalAmount,fee, store) values ('$paymentId','now',$amount, '$payment_request', $originalAmount, $(echo $originalAmount-$amount|bc -l ), '$storeId' )" insert
+   $QUERY "insert into invoices(id,dh,amount,invoice,originalAmount,fee, store, donation) values ('$paymentId','now',$amount, '$payment_request', $originalAmount, $(echo $originalAmount-$amount|bc -l ), '$storeId', '$donation' )" insert
    #exit 1
 
 else

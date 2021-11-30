@@ -22,10 +22,10 @@ uniqueidfile () {
 uniqueid () {   
    local tmp
    local _id
-   local ong
-   ong=$1   
+   local ngo
+   ngo=$1   
    _id=$2
-   tmp=$((echo -n "$ong-";echo -n "$_id" )|base64 -w 200)
+   tmp=$((echo -n "$ngo-";echo -n "$_id" )|base64 -w 200)
    echo -n "$tmp"
 
 }
@@ -109,7 +109,7 @@ do
         [ "$rate" = "null" ] && continue
 
 	echo "Rate=$rate"
-        share=$(roundsats $(echo "$fee*$rate"|bc -l ))
+        share=$(sats2btc $(roundsats $(echo "$fee*$rate"|bc -l )))
 	echo "Share=$share"
         
         
@@ -119,11 +119,11 @@ do
         file=$DONATIONSDIR/$uid
 
         js=$(jq -c --null-input \
-                  --argjson amt $share \
+                  --arg amt $share \
                   --arg id $id \
                   --arg source $idSource \
 		  --arg invoiceId "$idDonation" \
-                  '{ "type": "donation", "paymentMethod": "BTC-LightningNetwork", "source": $source, "payment": { "value": $amt }, "ong": $id, "invoiceId": $invoiceId }')
+                  '{ "type": "donation", "paymentMethod": "BTC-LightningNetwork", "source": $source, "payment": { "value": $amt }, "ngo": $id, "invoiceId": $invoiceId }')
 
 
         echo "$js" > $file.json

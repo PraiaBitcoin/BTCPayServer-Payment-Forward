@@ -1,6 +1,5 @@
 #! /bin/bash
 
-
 set -o noglob
 #set -x
 
@@ -22,7 +21,7 @@ lncliCMD () {
         error="false"
         errmsg=
 
-        ret=$(lncli --macaroonpath=/mnt/hdd/mynode/lnd/data/chain/bitcoin/mainnet/admin.macaroon --rpcserver=localhost:10009 --lnddir=/mnt/hdd/mynode/lnd $* 2>&1)
+        ret=$(lncli --macaroonpath=/mnt/hdd/mynode/lnd/data/chain/bitcoin/mainnet/admin.macaroon --rpcserver=localhost:10009 --lnddir=/mnt/hdd/mynode/lnd $* 2>&1 )
 
         status=$?
 
@@ -62,6 +61,7 @@ fi
 
 echo Waiting for payments
 
+files=0
 
 while [ true ]
 do
@@ -83,7 +83,7 @@ DUPLICATE=$BASEDIR/duplicate
 ZERO=$BASEDIR/zero
 DONATIONS=$BASEDIR/donations
 
-install -d $INVALID $DONEDIR $ONCHAIN $DUPLICATE $NONCUSTODIAL $ZERO $DONATIONS
+install -o www-data -d $INVALID $DONEDIR $ONCHAIN $DUPLICATE $NONCUSTODIAL $ZERO $DONATIONS $INVOICES
 
 if [ ! -x $EXEDIR/doit ]
 then
@@ -108,8 +108,6 @@ then
    exit 1
 fi
 
-files=0
-
 set +o noglob
 for i in $INVOICES/*.control $DONATIONS/*.control
 do
@@ -131,7 +129,7 @@ do
    . $i  
    if [ -z "$TOKEN" ] || [ -z "$FILE" ]
    then
-        echo $i contains invalid data. Keeping control file and continuing
+        logit "$i contains invalid data. Keeping control file and continuing"
         continue
    fi
 
@@ -147,36 +145,41 @@ do
    storeId=$(cat $FILE|jq -r .storeId)
 
    type=$(cat $FILE|jq -r .type)
-   if [ "$type" != "InvoicePaymentSettled" ]
+   if [ "$type" != "InvoicePaymentSettled" ] && [ "$type" != "donation" ]
    then 
-        logit "$FILE does not have a valid invoice type: [$type] expected [InvoicePaymentSettled]. Moving file to $INVALID"
+        logit "$FILE does not have a valid invoice type: [$type] expected [InvoicePaymentSettled/donation]. Moving file to $INVALID"
         mv $FILE $INVALID/ 
         mv $FILELOG $INVALID/        
         mv $i $INVALID/        
         continue
    fi   
-
+   isDonation=0
+   if [ "$type" = "donation" ]
+   then
+      isDonation=1
+   fi
 
    value=$(cat $FILE|jq -r .payment.value)
 
    if [ -z "$value" ] 
    then 
-        echo $FILE does not have a valid invoice value: $value. Keeping control file and continuing
+        logit "$FILE does not have a valid invoice value: $value. Moving file to $INVALID"
+        mv $FILE $INVALID/ 
+        mv $FILELOG $INVALID/        
+        mv $i $INVALID/        
         continue
    fi
+
    iValue=$( printf "%.0f" $(echo $value*100000000 | bc -l))
 
-
-	# todo
-        #check if it is a donation pay
-
-   #if it is not donation
+   if [ $isDonation -eq 0 ]
+   then 
       #check if invoice was paid to us
       storeinvoice=$(cat $FILE|jq -r .payment.destination)
       echo $FILE paid invoice is $storeinvoice
       if [ -z "$storeinvoice" ]
       then
-         echo $FILE does not have a valid destination invoice. Moving file to $INVALID
+         logit "$FILE does not have a valid destination invoice. Moving file to $INVALID"
          mv $FILELOG $INVALID/        
          mv $FILE $INVALID/ 
          mv $i $INVALID/        
@@ -189,7 +192,7 @@ do
        		
       if [ "$destination" != "$LOCALNODE" ]
       then     
-         echo $FILE payed invoice is not to our node. Moving file to $NONCUSTODIAL
+         logit "$FILE payed invoice is not to our node. Moving file to $NONCUSTODIAL"
          mv $FILELOG $NONCUSTODIAL/        
          mv $FILE $NONCUSTODIAL/ 
          mv $i $NONCUSTODIAL/        
@@ -202,7 +205,7 @@ do
 
       if [ "$isPaid" != "SETTLED" ]
       then
-         echo $FILE invoice is not in SETTLED state. Moving file to $INVALID
+         logit "$FILE invoice is not in SETTLED state. Moving file to $INVALID"
          mv $FILELOG $INVALID/        
          mv $FILE $INVALID/ 
          mv $i $INVALID/        
@@ -216,7 +219,7 @@ do
 
       if [ ! $paidAmount -eq $iValue   ]
       then
-         echo $FILE invoice does not have same amount paid. Moving file to $INVALID
+         logit "$FILE invoice does not have same amount paid. Moving file to $INVALID"
          mv $FILELOG $INVALID/        
          mv $FILE $INVALID/ 
          mv $i $INVALID/        
@@ -224,21 +227,25 @@ do
       fi
 
       	
-   #end of non donation
- 
-   amount=$( printf "%.0f" $(echo $iValue*$RATE | bc -l))
+   fi 
 
-   if [ $amount -eq $iValue ]
+   if [ $isDonation -eq 0 ]
    then
-      echo $FILE resulting fee equals to zero. 
-      amount=$(echo $iValue-1|bc -l )
+     amount=$( printf "%.0f" $(echo $iValue*$RATE | bc -l))
+     if  [ $amount -eq $iValue ]
+     then
+        logit "$FILE resulting fee equals to zero. Changing it to 1"
+        amount=$(echo $iValue-1|bc -l )
+     fi
+   else
+     amount=$iValue
    fi
 
    echo Amount: $amount iValue: $iValue value: $value
 
    if [ ! $amount -gt 0 ]
    then 
-      echo $FILE resulting amount is not grater than 0: $amount. Moving to $ZERO
+      logit "$FILE resulting amount is not grater than 0: $amount. Moving to $ZERO"
       mv $FILELOG $ZERO/        
       mv $FILE $ZERO/ 
       mv $i $ZERO/        
@@ -249,7 +256,7 @@ do
 
    if [ -z "$method" ] 
    then 
-        echo $FILE does not have a valid paymentMethod: $method. Moving file to $INVALID
+        logit "$FILE does not have a valid paymentMethod: $method. Moving file to $INVALID"
         mv $FILELOG $INVALID/        
         mv $FILE $INVALID/ 
         mv $i $INVALID/        
@@ -258,7 +265,7 @@ do
 
    if [ "$method" = "BTC" ] 
    then 
-        echo $FILE is ONCHAIN payment. Moving file to $ONCHAIN
+        logit "$FILE is ONCHAIN payment. Moving file to $ONCHAIN"
         mv $FILELOG $ONCHAIN/        
         mv $FILE $ONCHAIN/ 
         mv $i $ONCHAIN/        
@@ -267,22 +274,24 @@ do
 
    if [ ! "$method" = "BTC-LightningNetwork" ] 
    then 
-        echo $FILE does not have a recognized paymentMethod: $method. Moving file to $INVALID
+        logit "$FILE does not have a recognized paymentMethod: $method. Moving file to $INVALID"
         mv $FILELOG $INVALID/        
         mv $FILE $INVALID/ 
         mv $i $INVALID/        
         continue
    fi       
 
-   id=$(cat $FILE|jq -r .invoiceId)
+   domore=S
 
-   if [ -z "$id" ] 
+   id=$(cat $FILE|jq -r .invoiceId)  
+
+   if [ -z "$id" ] || [ "$id" = "null" ]
    then 
-        echo $FILE does not have a invoice Id: $id. Keeping control file and continuing
+        logit "$FILE does not have a invoice Id: $id. Keeping control file and continuing"
         continue
    fi
 
-   echo processing payid $id
+   logit "processing payid $id"
 
 	#Verificar se já foi pago...      
 
@@ -293,9 +302,8 @@ do
    then
       invoice=
    else
-      echo $FILE has already an generated invoice: $invoice
+      logit "$FILE has already an generated invoice: $invoice"
    fi
-
 
    echo Paid result query is $paid 
 
@@ -305,52 +313,68 @@ do
    else 
      if [ $paid -gt 0 ]
      then
-        echo $FILE already paid $paid: $method. Moving file to $DUPLICATE
+        logit "$FILE already paid $paid: $method. Moving file to $DUPLICATE"
         mv $FILELOG $DUPLICATE/        
         mv $FILE $DUPLICATE/ 
         mv $i $DUPLICATE/
         continue
      fi        
    fi
+   source=$(cat $FILE|jq -r .source)  
+   if [ "$source" = "null" ] || [ -z "$source" ]
+   then
+      source=$id
+   fi
    
-     #generate fees donations   
-   $EXEDIR/splitfee.sh $(echo $iValue-$amount|bc -l) "$id" 
+   if [ $isDonation -eq 0 ]
+   then
+       #generate fees donations   
+     ret=$($EXEDIR/splitfee.sh $(echo $iValue-$amount|bc -l) "$id" 2>&1) 
+     status=$?
+     logit "$ret"
 
-   status=$?
-
-   if [ ! $status -eq 0 ]; then
-      echo error while processing fees for $FILE. Keeping control file and continuing
-      continue
-   fi   
-
-   #exit 1;
+     if [ ! $status -eq 0 ]; then
+        logit "error while processing fees donations for $FILE. Keeping control file and continuing"
+        continue
+     fi   
+     memo="Pgto da fatura $source"
+   else
+     memo="Donation to $(cat $FILE|jq -r .ngo) of $source (Id $id)" 
+   fi
     
-   $EXEDIR/doit $TOKEN $amount $iValue "Pgto da fatura $id" "$invoice" "$id" "$storeId"
-
+   ret=$($EXEDIR/doit $TOKEN $amount $iValue "$memo" "$invoice" "$id" "$storeId" $isDonation 2>&1)
    status=$?
+   logit "$ret"
+
 
    if [ $status -eq 5 ]; then
       #rety
 
-      $EXEDIR/doit $TOKEN $amount $iValue "Pgto da fatura $id" "$invoice" "$id" "$storeId"
+      ret=$($EXEDIR/doit $TOKEN $amount $iValue "Pgto da fatura $id" "$invoice" "$id" "$storeId" $isDonation 2>&1)
 
       status=$?
+      logit "$ret"
+
    fi
 
-
    if [ ! $status -eq 0 ]; then
-      echo error while processing $FILE. Keeping control file and continuing
+      logit "error while processing $FILE. Keeping control file and continuing"
       continue
    fi   
    mv $FILELOG $DONEDIR/        
    mv $FILE $DONEDIR/ 
    mv $i $DONEDIR/ 
-   ((files++))
-   ((localpaid+=amount)) 
-   ((total+=amount)) 
-   ((totalinvoices++))
-
+   let files++
+   let localpaid+=amount 
+   let total+=amount 
+   let totalinvoices++   
 done
+   if [ "$domore" = "S" ]
+   then
+      domore=
+      continue
+   fi
+    
    if [ $files -gt 0 ]
    then
       echo
@@ -360,9 +384,12 @@ done
       echo +++++++++++++++++++++++++++++++++++++++++++
       echo
       echo Waiting for payments
+      files=0
+      
    fi
    ##Wait for a invoice to come   
    inotifywait -qq -t 60 $INVOICES $DONATIONS
+   sleep 2
 
 
 done
