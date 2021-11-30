@@ -83,12 +83,7 @@ DUPLICATE=$BASEDIR/duplicate
 ZERO=$BASEDIR/zero
 DONATIONS=$BASEDIR/donations
 
-
-install -d $INVALID
-install -d $DONEDIR 
-install -d $ONCHAIN
-install -d $DUPLICATE
-install -d $NONCUSTODIAL
+install -d $INVALID $DONEDIR $ONCHAIN $DUPLICATE $NONCUSTODIAL $ZERO $DONATIONS
 
 if [ ! -x $EXEDIR/doit ]
 then
