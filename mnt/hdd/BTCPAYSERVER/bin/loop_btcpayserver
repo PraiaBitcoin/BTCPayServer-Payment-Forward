@@ -339,7 +339,9 @@ do
      fi   
      memo="Pgto da fatura $source"
    else
-     memo="Donation to $(cat $FILE|jq -r .ngo) of $source (Id $id)" 
+     iValue=0
+     storeId=$(cat $FILE|jq -r .ngo)
+     memo="Donation to $storeId of $source (Id $id)" 
    fi
     
    ret=$($EXEDIR/doit $TOKEN $amount $iValue "$memo" "$invoice" "$id" "$storeId" $isDonation 2>&1)
