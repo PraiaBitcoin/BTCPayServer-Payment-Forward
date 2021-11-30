@@ -62,11 +62,10 @@ fi
 echo Waiting for payments
 
 files=0
+localpaid=0
 
 while [ true ]
 do
-
-localpaid=0
 
 EXEDIR=$(dirname $0)
 
@@ -381,12 +380,13 @@ done
    then
       echo
       echo +++++++++++++++++++++++++++++++++++++++++++
-      echo Paid $localpaid sats in $files invoice\(s\)
+      echo Paid $localpaid sats in $files invoice\(s\)     	
       echo Total paid $total sats in $totalinvoices invoice\(s\)
       echo +++++++++++++++++++++++++++++++++++++++++++
       echo
       echo Waiting for payments
       files=0
+      localpaid=0
       
    fi
    ##Wait for a invoice to come   
