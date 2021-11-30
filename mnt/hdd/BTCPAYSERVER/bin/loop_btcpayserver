@@ -81,6 +81,8 @@ ONCHAIN=$BASEDIR/onchain
 NONCUSTODIAL=$BASEDIR/noncustodial
 DUPLICATE=$BASEDIR/duplicate
 ZERO=$BASEDIR/zero
+DONATIONS=$BASEDIR/donations
+
 
 install -d $INVALID
 install -d $DONEDIR 
@@ -114,7 +116,7 @@ fi
 files=0
 
 set +o noglob
-for i in $INVOICES/*.control 
+for i in $INVOICES/*.control $DONATIONS/*.control
 do
   set -o noglob
   
@@ -152,7 +154,7 @@ do
    type=$(cat $FILE|jq -r .type)
    if [ "$type" != "InvoicePaymentSettled" ]
    then 
-        echo $FILE does not have a valid invoice type: $type expected [InvoicePaymentSettled]. Moving file to $INVALID
+        logit "$FILE does not have a valid invoice type: [$type] expected [InvoicePaymentSettled]. Moving file to $INVALID"
         mv $FILE $INVALID/ 
         mv $FILELOG $INVALID/        
         mv $i $INVALID/        
@@ -365,7 +367,7 @@ done
       echo Waiting for payments
    fi
    ##Wait for a invoice to come   
-   inotifywait -qq -t 60 /mnt/hdd/BTCPAYSERVER/invoices/ 
+   inotifywait -qq -t 60 $INVOICES $DONATIONS
 
 
 done

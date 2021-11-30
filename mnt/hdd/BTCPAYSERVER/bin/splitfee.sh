@@ -127,7 +127,7 @@ do
 
 
         echo "$js" > $file.json
-        echo "FILE=$uid.json" > $file.control 
+        echo "FILE=$file.json" > $file.control 
         echo "TOKEN=$(echo -n "$url"|base64 -w 200)" >> $file.control 
 
 	let index++

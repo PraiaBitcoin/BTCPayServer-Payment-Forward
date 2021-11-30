@@ -39,6 +39,9 @@ createdb () {
 
  _execute "alter table invoices add fee bigint"
 
+ _execute "alter table invoices add donation char(1)"
+
+
  _execute "ALTER TABLE ONLY invoices ADD CONSTRAINT PK_Invoices PRIMARY KEY (\"id\")";
 
  _execute "create table stores(id varchar(80) not null)"
@@ -57,6 +60,8 @@ createdb () {
 
  _execute "alter table charity alter id type varchar(10)"
 
+ _execute "update invoices set donation='N' where donation is null"
+
   
 
 }
@@ -74,7 +79,7 @@ db=$4
 
 
 if [ -z "$cmd" ]
-then
+then  
   if [ -z "$field" ]
   then
      echo "{\"error\", true}"
