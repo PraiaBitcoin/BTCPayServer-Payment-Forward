@@ -104,7 +104,8 @@ Self-payments are not allowed, then, to not need a second node for the users wal
 
 
 # Payment Forward Fee Policy
-We are charging 1% flat fee for all forwards. You can change the fee in your self hosted script, by changing the ```RATE``` in ```payer.conf```
+We are charging 2% flat fee for all forwards. You can change the fee in your self hosted script, by changing the ```RATE``` in ```payer.conf```
+50% of the charged fee is donated to [Xavi Surf Kids](https://www.xavisurfschool.com/pt/o-team/xavi-surf-kids/), the most important social project of Jericoacoara.
 
 # No Warranty
 Version Alpha. 
