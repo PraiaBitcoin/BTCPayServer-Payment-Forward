@@ -134,7 +134,6 @@ payByLND () {
 
         status=$?
 
-
         if echo "$ret" | grep "invoice is already paid" &> /dev/null
         then
             echo "Already paid"
@@ -158,15 +157,27 @@ payByLND () {
 
 
 parsetoken () {
+   lnpay=
    token=$1
    user=$(echo "$token" | grep -o -P '(?<=://).*(?=@)')
    pass=$(echo "$user" | grep -o -P '(?<=:).*(?=)')
    user=$(echo "$user" | grep -o -P '(?<=).*(?=:)')
    host=$(echo "$token" | grep -o -P '(?<=@).*(?=)')
-#   echo $user
-#   echo $pass
-#   echo $host
-#   echo $token
+   if [ -z "$user" ]
+   then
+      lnpay="S"
+      user=$(echo "$token" | grep -o -P '(?<=lnpay://).*(?=@)')
+   fi 	 
+   if [ -z "$user" ]
+   then
+      lnpay=
+   fi
+   
+   echo User: $user
+   echo Pass: $pass
+   echo Host: $host
+   echo Token: $token
+   echo LNPay: $lnpay
 }
 
 post () {
@@ -198,6 +209,7 @@ get () {
 	_url=$1
 	_token=$2
 	tk=''
+	ret=
 	if [ -n "$_token" ]
 	then
 		_tk=Authorization:\ Bearer\ $_token
@@ -211,6 +223,23 @@ get () {
 	fi   
 
 	parse "$ret"
+	
+}
+
+getGeneric () {
+
+	_url=$1
+	ret=
+        ret=$(curl -ss -k -X GET "$_url" )
+	status=$?
+        if [ ! $status -eq 0 ]; then
+   	     error='Unknow'
+	     errmsg=$ret
+	     exit
+	fi   
+
+	parse "$ret"
+	
 }
 
 
@@ -220,20 +249,31 @@ generate () {
    _token=$2
    _amt=$3
    _memo=$4
+   _storeIsLNPay=$5
    
-   js=$(jq -c --null-input \
+   payment_request=
+   
+   if [ -z "$_storeIsLNPay" ]
+   then   
+     js=$(jq -c --null-input \
 		  --arg amt $_amt \
 		  --arg memo "$_memo" \
 		  '{"amt": $amt, "memo": $memo}')
-   cmd=addinvoice
-   url=$_host$cmd
+     cmd=addinvoice
+     url=$_host$cmd
 	echo $url
 	echo $_token
 	echo $js
 
-   post $url $_token "$js"
-   payment_request=$(echo $ret | jq -r .payment_request )
-
+     post $url $_token "$js"
+     payment_request=$(echo $ret | jq -r .payment_request )
+   else
+     _amt=$( printf "%.0f" $(echo $_amt*1000 | bc -l))
+     url="$_token?amount=$_amt"
+     echo "URL_storeIsLNPay: $url"
+     getGeneric "$url"
+     payment_request=$(echo $ret | jq -r .pr )      
+   fi
 
 }
 
@@ -242,18 +282,29 @@ login () {
 	_host=$1
 	_user=$2
 	_pass=$3
-	js=$(jq -c --null-input \
+	_lnpay=$4
+	
+	if [ -z "$_lnpay" ]
+	then	
+	  js=$(jq -c --null-input \
 		  --arg user "$_user" \
 		  --arg password "$_pass" \
 		  '{"login": $user, "password": $password}')
 
-	auth=auth?type=auth
-	url=$_host$auth
-        post $url "" "$js"
-        #ret=$(curl -ss --insecure -d "$js" -X POST $url  -H 'Content-Type: application/json' )
+	  auth=auth?type=auth
+	  url=$_host$auth
+          post $url "" "$js"
+          #ret=$(curl -ss --insecure -d "$js" -X POST $url  -H 'Content-Type: application/json' )
 
-   	token=$(echo $ret | jq -r .access_token )
-
+   	  token=$(echo $ret | jq -r .access_token )
+        else
+	  # LNPAY
+          echo "IsLNPay"
+	  url="https://$_host/.well-known/lnurlp/$_user"
+	  echo URL=$url
+	  getGeneric $url
+	  token=$(echo $ret | jq -r .callback )	  
+	fi
 
 }
 
@@ -317,21 +368,33 @@ then
    exit 1
 fi
 
-
 parsetoken $(echo $tokenStore|base64 --decode)
 userStore=$user
 passStore=$pass
 hostStore=$host
+storeIsLNPay=$lnpay
 
-if [ -z "$userStore" ] || [ -z "$passStore" ] || [ -z "$hostStore" ]
+echo storeIsLNPay: $storeIsLNPay
+
+if [ -z "$userStore" ] || [ -z "$hostStore" ]
 then
    echo Invalid STORE token
    exit 1
 fi	
+
+
+if [ -z "$passStore" ] && [ -z "$storeIsLNPay" ]
+then
+   echo Invalid STORE token
+   exit 1
+fi
+      
+      
+
 #exit 1
 
    #Perform login to store service
-login $hostStore $userStore $passStore
+login "$hostStore" "$userStore" "$passStore" "$storeIsLNPay"
 if [ "$error" = "true" ]
 then
   echo error: [$errmsg]
@@ -345,11 +408,10 @@ then
 fi
 
 tokenStore=$token
-#echo tokenStore: $tokenStore
-
+#echo "<<<<<<<<<<<<<<<<<<<<<<<tokenStore: $tokenStore"
 
    #Perform login to payer service
-login $hostPayer $userPayer $passPayer
+login "$hostPayer" "$userPayer" "$passPayer" ""
 if [ "$error" = "true" ]
 then
   echo error: [$errmsg]
@@ -383,7 +445,7 @@ then
    if [ -z "$PAYERINVOICE" ]
    then
 
-     generate $hostPayer $tokenPayer 100000 "Payer recharge"
+     generate "$hostPayer" "$tokenPayer" "100000" "Payer recharge" ""
 
      if [ "$payment_request" = "null" ]
      then
@@ -404,7 +466,7 @@ fi
 
 if [ -z "$oldInvoice" ]
 then
-   generate $hostStore $tokenStore $amount "$memo"
+   generate "$hostStore" "$tokenStore" "$amount" "$memo" "$storeIsLNPay"
 
    if [ "$payment_request" = "null" ]
    then
