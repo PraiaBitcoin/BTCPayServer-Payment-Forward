@@ -1,0 +1,17 @@
+#! /usr/bin/env python3
+import argparse
+import binascii
+import lnurl
+
+parser = argparse.ArgumentParser(description='LNURL decode')
+parser.add_argument('lnurl')
+args = parser.parse_args()
+
+print(lnurl.decode(args.lnurl));
+
+
+
+
+
+
+
