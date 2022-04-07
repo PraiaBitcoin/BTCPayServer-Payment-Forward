@@ -1,6 +1,27 @@
 #! /bin/sh
 
+#Add /usr/local/bin - Crontab error
+#Example for crontab 
+#@reboot sleep 600 && /mnt/hdd/BTCPAYSERVER/bin/guard_btcpayserver
+
+PATH="$PATH:/usr/local/bin"
 EXEDIR=$(dirname $0)
+LOG=$EXEDIR/../log.out
+
+rm $LOG -f 
+
+# Close standard output file descriptor
+exec 1<&-
+# Close standard error file descriptor
+exec 2<&-
+
+# Open standard output as $LOG file for read and write.
+exec 1<>$LOG
+
+# Redirect standard error to standard output
+exec 2>&1
+
+
 
 killall loop_btcpayserver &> /dev/null
 
