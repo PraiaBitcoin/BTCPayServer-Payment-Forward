@@ -64,6 +64,7 @@ then
 
     if [ $status -eq 0 ]
     then
+      echo Paid "$invoice on $(basename \"$f\")"
       mv "$f" "$f.paid"
     fi
 #    echo $ret
