@@ -34,6 +34,12 @@ while [ $# -gt 0 ]; do
       ;;
     esac
  done
+ 
+if [[ "$AMOUNT" == "" || ! "$AMOUNT" =~ ^[0-9]+$ || "$AMOUNT" -lt 1000 ]]
+then
+  echo "Invalid amount value. use '-a value' to specify it. Remember it is in msats"
+  exit 1
+fi   
 
 
 docker run --rm --name payurl -v $COMMANDS:/usr/src/app/commands -e "AMOUNT=$AMOUNT" -e "COMMENT=$COMMENT" -e "PAY=$PAY" payurl 
