@@ -12,6 +12,10 @@ PAY=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
+    -b | --build )
+      docker build -t payurl .
+      shift 1
+      ;;
     -a | --amount )
       AMOUNT="$2"
       shift 2
