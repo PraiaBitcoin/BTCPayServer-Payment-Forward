@@ -5,6 +5,10 @@
 apt-get install php-fpm
 apt-get install jq
 apt-get install bc
+apt install python3.9
+
+
+python3.9 -m pip install lnurl
 
 DEST=/mnt/hdd/BTCPAYSERVER
 EXEDIR=$(dirname $0)$DEST/bin

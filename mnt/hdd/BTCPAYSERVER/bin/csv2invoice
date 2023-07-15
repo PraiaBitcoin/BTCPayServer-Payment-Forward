@@ -1,0 +1,102 @@
+#! /bin/bash
+
+DIR=$(dirname $0)
+
+LNURLDECODE=$DIR/lnurldecode
+
+OUT=$(pwd)
+OUTCMD=$OUT/commands
+#echo $OUTCMD
+#exit 0
+
+install -d $OUTCMD
+
+urlencode() {
+  # Armazena a string a ser codificada
+    local string="$1"
+    local length="${#string}"
+    local encoded_string=""
+	
+    # Itera por cada caractere da string
+    for (( i = 0; i < length; i++ )); do
+      local char="${string:i:1}"
+      case "$char" in
+        [a-zA-Z0-9.~_-])
+	  encoded_string+="$char" ;;
+	*)
+	  encoded_string+=$(printf '%%%02X' "'$char") ;;
+       esac
+    done
+						      
+    # Retorna a string codificada
+    echo "$encoded_string"
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -a | --amount )
+      AMOUNT="$2"
+      shift 2
+      ;;
+    -c | --comment )
+      COMMENT=$(urlencode "$2")
+      shift 2
+      ;;
+    * )
+    echo "Invalid argument [$1]"
+    exit 1
+    ;;
+  esac
+done
+
+if [ -z "$AMOUNT" ]
+then
+  AMOUNT=1000
+fi
+
+echo "Amount: $AMOUNT  Comment: $COMMENT"
+
+#echo $LNURLDECODE
+while IFS=, read -r line
+do
+   columns=($line)
+
+   lnurl=$(echo $line|  awk -F',' -v columns="2" 'BEGIN {split(columns, arr, " ");} {for (i in arr) printf "%s,", $arr[i]; print ""}' - | sed 's/,$//')
+   name=$(echo $line|  awk -F',' -v columns="1" 'BEGIN {split(columns, arr, " ");} {for (i in arr) printf "%s,", $arr[i]; print ""}' - | sed 's/,$//')
+   name=$(urlencode "$name")
+   
+   if [ -z "$name" ]
+   then
+     name="Unknown"
+   fi   
+   
+#   echo $name
+
+   url=$($LNURLDECODE $lnurl  2> /dev/null)
+   if [ -z "$url" ]
+   then
+     continue
+   fi
+   
+   CMT="&comment=$COMMENT%20for%20$name"
+
+		  
+   jsongerar=$(curl -s "$url")
+
+   urlgerar=$(echo $jsongerar|jq -r .callback)
+
+   urlfinal="$urlgerar?amount=$AMOUNT$CMT"
+
+   OUT=$OUTCMD/$name\_$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 20 | head -n 1).invoice
+
+   jsonfinal=$(curl -s "$urlfinal")  
+
+   pr=$(echo $jsonfinal| jq -r .pr)
+   echo "Invoice for $name: $pr"
+  
+   echo $pr > "$OUT"
+
+
+done
+
+
