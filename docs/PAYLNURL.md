@@ -48,7 +48,7 @@ Clone this github repository and run then script, put csv files with name,lnurl 
 # ./run.sh -a 10000000 -c "This is a test tip" -p
 ```
 This example creates a example in commans/list.csv, runs script, generates those invoices with 10k sats (10M msats) and pays those invoices
-After all are goos, the commands/list.csv is renamed to list.csv.done and several files named *.invoice.paid... If there is any file called .invoice, you can run it again, and the script tries to pay thos pending invoices
+After all are good, the commands/list.csv is renamed to list.csv.done and several files named *.invoice.paid... If there is any file called .invoice, you can run it again, and the script tries to pay thos pending invoices
 
 
 
