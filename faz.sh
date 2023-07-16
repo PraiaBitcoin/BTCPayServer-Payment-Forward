@@ -12,7 +12,7 @@ do
   
   echo "Processing $f."
 
-  cat $f | ./csv2invoice -a "$AMOUNT" -c "$COMMENT"
+  cat "$f" | ./csv2invoice -a "$AMOUNT" -c "$COMMENT"
   mv "$f" "$f.done"
   sleep 1
   

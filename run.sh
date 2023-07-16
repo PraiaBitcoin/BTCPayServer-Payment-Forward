@@ -1,6 +1,13 @@
 #! /bin/bash
 
 #docker build -t paylnurl .
+BASEDIR=$(dirname "$0")
+
+if [[ -f $BASEDIR/scripts/scripts.inc ]]
+then
+  echo "Incluindo scripts..."
+  . $BASEDIR/scripts/scripts.inc
+fi
 
 function build() {
    docker build -t paylnurl .   
@@ -12,11 +19,11 @@ function usage() {
       echo "CSV files must have 2 or more columns, containing 'name' and 'lnurl' fields"
       echo 
       echo "Usage: $0 [-b||--build] [[-a||--amount] value]] [-c||--comment] comment] [-p] [-h||--help]"
-      echo "   -b|--build => build docker image"
-      echo "   -a|--amount value => amount in milisats to generate invoices "  
-      echo "   -c|--comment comment => Comment "
-      echo "   -p|--pay => Pay invoices"
-      echo "   -h||--help => Shows this help" 
+      echo "   -b,--build => build docker image"
+      echo "   -a,--amount value => amount in milisats to generate invoices "  
+      echo "   -c,--comment comment => Comment "
+      echo "   -p,--pay url => Pay invoices"
+       echo "   -h||--help => Shows this help" 
       exit 1
 }
 
@@ -43,13 +50,14 @@ while [ $# -gt 0 ]; do
       shift 2
       ;;
     -p | --pay )
-      PAY=1
-      shift 1
+      PAYER="$2"
+      shift 2
       ;;
     -h | --help )
       usage
       ;;
     * )
+      echo
       echo "Invalid argument [$1]"
       echo 
       usage
@@ -66,21 +74,28 @@ then
   build  
 fi 
 
+#if [ ! -z "$PAYER" ]
+#then
+#   parsetoken_payer "$PAYER"
+#fi
 
 if [[ "$AMOUNT" == "" || ! "$AMOUNT" =~ ^[0-9]+$ || "$AMOUNT" -lt 1000 ]]
 then
   echo "Invalid amount value. use '-a value' to specify it. Remember it is in msats"
+  echo
   usage
 fi   
 
 docker run --rm --name paylnurl -v $COMMANDS:/usr/src/app/commands -e "AMOUNT=$AMOUNT" -e "COMMENT=$COMMENT" -e "PAY=$PAY" paylnurl 
 
-if [ "$PAY" -gt 0 ]
-then
+if [ ! -z  "$PAYER" ]
+then  
   echo "Paying invoices"
+  
+  parsetoken_payer "$PAYER"
+    
   for f in ./commands/*.invoice
   do
-
     if [ ! -f "$f" ]
     then
       echo "Nothing more to pay"
@@ -88,26 +103,15 @@ then
     fi
 
     invoice=$(cat "$f")
-
-    ret=$(lncli --macaroonpath=/mnt/hdd/mynode/lnd/data/chain/bitcoin/mainnet/admin.macaroon --rpcserver=localhost:10009 --lnddir=/mnt/hdd/mynode/lnd payinvoice $maxfee -f --allow_self_payment $channel "$invoice" 2>&1)
-
-    status=$?
-
-    if echo "$ret" | grep "invoice is already paid" &> /dev/null
-    then
-      echo "Already paid"
-      status=0
-    fi
-
-    if [ $status -eq 0 ]
+    
+    pay_invoice $invoice
+    
+    if [ $status_pay -eq 0 ]
     then
       echo Paid "$invoice on $(basename \"$f\")"
       mv "$f" "$f.paid"
+    else 
+      echo "Invoice [$invoice] was not paid"
     fi
-#    echo $ret
-
-
-
   done
-
 fi
