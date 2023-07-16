@@ -28,8 +28,11 @@ It takes some parameteres to process:
 -c, --comment comment
    Comment to the invoice
 
--p, --pay
-   pay generated invoices
+-p, --pay url
+   pay generated invoices thru payer identified by url
+   Possible values are
+   lncli: Internal lncli command
+   lnbits://admin:xxxx@https://yourlnbitsapi 
 
 -h, --help
    Displays a basic help
