@@ -51,12 +51,9 @@ This example creates a example in commans/list.csv, runs script, generates those
 After all are good, the commands/list.csv is renamed to list.csv.done and several files named *.invoice.paid... If there is any file called .invoice, you can run it again, and the script tries to pay thos pending invoices
 
 # File Extensions
-.csv - file to generate invoices
-.invoice - invoice to pay
-.cvs.done - file processed
-.invoice.paid - invoice paid
-
-
-
-  
-
+```
+.csv - file to generate invoices<br>
+.invoice - invoice to pay<br>
+.cvs.done - file processed<br>
+.invoice.paid - invoice paid<br>
+```
