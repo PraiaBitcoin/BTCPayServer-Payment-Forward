@@ -72,7 +72,7 @@ docker run --rm --name paylnurl -v $COMMANDS:/usr/src/app/commands -e "AMOUNT=$A
 
 if [ "$PAY" -gt 0 ]
 then
-  echo "Efetuando pagamentos"
+  echo "Paying invoices"
   for f in ./commands/*.invoice
   do
 
