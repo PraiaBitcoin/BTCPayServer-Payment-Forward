@@ -6,6 +6,20 @@ function build() {
    docker build -t paylnurl .   
 }
 
+function usage() {
+      echo "This script starts or generates a docker image called 'paylnurl', export 'commands' subdir to it and generate with invoices in it to be paied later or pay that invoices"
+      echo "Generated files are also in 'commands' sub dir"
+      echo "CSV files must have 2 or more columns, containing 'name' and 'lnurl' fields"
+      echo 
+      echo "Usage: $0 [-b||--build] [[-a||--amount] value]] [-c||--comment] comment] [-p] [-h||--help]"
+      echo "   -b|--build => build docker image"
+      echo "   -a|--amount value => amount in milisats to generate invoices "  
+      echo "   -c|--comment comment => Comment "
+      echo "   -p|--pay => Pay invoices"
+      echo "   -h||--help => Shows this help" 
+      exit 1
+}
+
 DIR=$(pwd)
 
 COMMANDS=$DIR/commands
@@ -18,7 +32,6 @@ while [ $# -gt 0 ]; do
   case "$1" in
     -b | --build )
       build
-#      docker build -t paylnurl .
       shift 1
       ;;
     -a | --amount )
@@ -33,19 +46,13 @@ while [ $# -gt 0 ]; do
       PAY=1
       shift 1
       ;;
-    -h | --help | * )
-
-      echo "This script starts or generates a docker image called 'paylnurl', export 'commands' subdir to it and generate with invoices in it to be paied later or pay that invoices"
-      echo "Generated files are also in 'commands' sub dir"
-      echo "CSV files must have 2 or more columns, containing 'name' and 'lnurl' fields"
+    -h | --help )
+      usage
+      ;;
+    * )
+      echo "Invalid argument [$1]"
       echo 
-      echo "Usage: $0 [-b||--build] [[-a||--amount] value]] [-c||--comment] comment] [-p] [-h||--help]"
-      echo "   -b|--build => build docker image"
-      echo "   -a|--amount value => amount in milisats to generate invoices "  
-      echo "   -c|--comment comment => Comment "
-      echo "   -p|--pay => Pay invoices"
-      echo "   -h||--help => Shows this help" 
-      exit 1
+      usage
 #    * )
 #      echo "Invalid argument [$1]"
 #      exit 1
@@ -63,10 +70,8 @@ fi
 if [[ "$AMOUNT" == "" || ! "$AMOUNT" =~ ^[0-9]+$ || "$AMOUNT" -lt 1000 ]]
 then
   echo "Invalid amount value. use '-a value' to specify it. Remember it is in msats"
-  exit 1
+  usage
 fi   
-
-
 
 docker run --rm --name paylnurl -v $COMMANDS:/usr/src/app/commands -e "AMOUNT=$AMOUNT" -e "COMMENT=$COMMENT" -e "PAY=$PAY" paylnurl 
 
