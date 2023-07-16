@@ -2,6 +2,10 @@
 
 #docker build -t payurl .
 
+function build() {
+   docker build -t payurl .   
+}
+
 DIR=$(pwd)
 
 COMMANDS=$DIR/commands
@@ -13,7 +17,8 @@ PAY=0
 while [ $# -gt 0 ]; do
   case "$1" in
     -b | --build )
-      docker build -t payurl .
+      build
+#      docker build -t payurl .
       shift 1
       ;;
     -a | --amount )
@@ -28,9 +33,21 @@ while [ $# -gt 0 ]; do
       PAY=1
       shift 1
       ;;
-    * )
-      echo "Invalid argument [$1]"
+    -h | --help | * )
+
+      echo "This script starts or generates a docker image called 'payurl', export 'commands' subdir to it and generate with invoices in it to be paied later or pay that invoices"
+      echo "Generated files are also in 'commands' sub dir"
+      echo "CSV files must have 2 or more columns, containing 'name' and 'lnurl' fields"
+      echo 
+      echo "Usage: $0 [-b||--build] [[-a||--amount] value]] [-c||--comment] comment] [-p] [-h||--help]"
+      echo "   -b => build docker image"
+      echo "   -a||--amount value => amount in milisats to generate invoices "  
+      echo "   -c||--comment comment => Comment "
+      echo "   -h||--help => Shows this help" 
       exit 1
+#    * )
+#      echo "Invalid argument [$1]"
+#      exit 1
       ;;
     esac
  done
@@ -41,6 +58,13 @@ then
   exit 1
 fi   
 
+
+if ! docker image inspect payurl >/dev/null 2>&1
+then
+  build  
+fi 
+
+exit 0
 
 docker run --rm --name payurl -v $COMMANDS:/usr/src/app/commands -e "AMOUNT=$AMOUNT" -e "COMMENT=$COMMENT" -e "PAY=$PAY" payurl 
 
