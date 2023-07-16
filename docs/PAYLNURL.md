@@ -52,8 +52,11 @@ After all are good, the commands/list.csv is renamed to list.csv.done and severa
 
 # File Extensions
 ```
-.csv - file to generate invoices<br>
-.invoice - invoice to pay<br>
-.cvs.done - file processed<br>
-.invoice.paid - invoice paid<br>
+.csv - file to generate invoices
+
+.invoice - invoice to pay
+
+.cvs.done - file processed
+
+.invoice.paid - invoice paid
 ```
