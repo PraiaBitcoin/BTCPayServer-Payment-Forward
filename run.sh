@@ -40,9 +40,10 @@ while [ $# -gt 0 ]; do
       echo "CSV files must have 2 or more columns, containing 'name' and 'lnurl' fields"
       echo 
       echo "Usage: $0 [-b||--build] [[-a||--amount] value]] [-c||--comment] comment] [-p] [-h||--help]"
-      echo "   -b => build docker image"
-      echo "   -a||--amount value => amount in milisats to generate invoices "  
-      echo "   -c||--comment comment => Comment "
+      echo "   -b|--build => build docker image"
+      echo "   -a|--amount value => amount in milisats to generate invoices "  
+      echo "   -c|--comment comment => Comment "
+      echo "   -p|--pay => Pay invoices"
       echo "   -h||--help => Shows this help" 
       exit 1
 #    * )
