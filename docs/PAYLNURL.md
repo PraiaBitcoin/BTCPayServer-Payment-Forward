@@ -19,19 +19,19 @@ run ./run.sh located in base dir.
 That script generates a docker image containing all packages needed for the script to run.
 It takes some parameteres to process:
 ```
--b|--build
+-b, --build
    build/rebuild docker image
 
--a|--amount value
+-a, --amount value
    Amount in millisats to generate invoices
 
--c|--comment comment
+-c, --comment comment
    Comment to the invoice
 
--p|--pay
+-p, --pay
    pay generated invoices
 
--h|--help
+-h, --help
    Displays a basic help
 ```
 
