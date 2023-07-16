@@ -1,9 +1,9 @@
 #! /bin/bash
 
-#docker build -t payurl .
+#docker build -t paylnurl .
 
 function build() {
-   docker build -t payurl .   
+   docker build -t paylnurl .   
 }
 
 DIR=$(pwd)
@@ -18,7 +18,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     -b | --build )
       build
-#      docker build -t payurl .
+#      docker build -t paylnurl .
       shift 1
       ;;
     -a | --amount )
@@ -35,7 +35,7 @@ while [ $# -gt 0 ]; do
       ;;
     -h | --help | * )
 
-      echo "This script starts or generates a docker image called 'payurl', export 'commands' subdir to it and generate with invoices in it to be paied later or pay that invoices"
+      echo "This script starts or generates a docker image called 'paylnurl', export 'commands' subdir to it and generate with invoices in it to be paied later or pay that invoices"
       echo "Generated files are also in 'commands' sub dir"
       echo "CSV files must have 2 or more columns, containing 'name' and 'lnurl' fields"
       echo 
@@ -52,7 +52,14 @@ while [ $# -gt 0 ]; do
       ;;
     esac
  done
- 
+
+
+if ! docker image inspect paylnurl >/dev/null 2>&1
+then
+  build  
+fi 
+
+
 if [[ "$AMOUNT" == "" || ! "$AMOUNT" =~ ^[0-9]+$ || "$AMOUNT" -lt 1000 ]]
 then
   echo "Invalid amount value. use '-a value' to specify it. Remember it is in msats"
@@ -60,14 +67,8 @@ then
 fi   
 
 
-if ! docker image inspect payurl >/dev/null 2>&1
-then
-  build  
-fi 
 
-exit 0
-
-docker run --rm --name payurl -v $COMMANDS:/usr/src/app/commands -e "AMOUNT=$AMOUNT" -e "COMMENT=$COMMENT" -e "PAY=$PAY" payurl 
+docker run --rm --name paylnurl -v $COMMANDS:/usr/src/app/commands -e "AMOUNT=$AMOUNT" -e "COMMENT=$COMMENT" -e "PAY=$PAY" paylnurl 
 
 if [ "$PAY" -gt 0 ]
 then
