@@ -14,16 +14,18 @@ function build() {
 }
 
 function usage() {
-      echo "This script starts or generates a docker image called 'paylnurl', export 'commands' subdir to it and generate with invoices in it to be paied later or pay that invoices"
+      echo "This script starts or generates a docker image called 'paylnurl', exports 'commands' subdir to it generates and pay invoices"
       echo "Generated files are also in 'commands' sub dir"
       echo "CSV files must have 2 or more columns, containing 'name' and 'lnurl' fields"
       echo 
       echo "Usage: $0 [-b||--build] [[-a||--amount] value]] [-c||--comment] comment] [-p] [-h||--help]"
+      echo "   -d,--debug => Print some additional info"
       echo "   -b,--build => build docker image"
       echo "   -a,--amount value => amount in milisats to generate invoices "  
       echo "   -c,--comment comment => Comment "
       echo "   -p,--pay url => Pay invoices"
-       echo "   -h||--help => Shows this help" 
+      echo "   -t,--test  => Test"
+      echo "   -h||--help => Shows this help" 
       exit 1
 }
 
@@ -34,11 +36,21 @@ COMMANDS=$DIR/commands
 install -d $COMMANDS
 
 PAY=0
+DEBUG=0
+TEST=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
     -b | --build )
       build
+      shift 1
+      ;;
+    -t | --test )
+      TEST=1
+      shift 1
+      ;;
+    -d | --debug )
+      DEBUG=1
       shift 1
       ;;
     -a | --amount )
@@ -74,10 +86,15 @@ then
   build  
 fi 
 
-#if [ ! -z "$PAYER" ]
-#then
-#   parsetoken_payer "$PAYER"
-#fi
+if [[ $TEST -gt 0 ]]
+then
+  if [ ! -z "$PAYER" ]
+  then
+    parsetoken_payer "$PAYER"
+    echo "Balance: $(getSaldo ${token_payer[@]}) sats"
+  fi
+  exit 0
+fi
 
 if [[ "$AMOUNT" == "" || ! "$AMOUNT" =~ ^[0-9]+$ || "$AMOUNT" -lt 1000 ]]
 then
@@ -103,8 +120,8 @@ then
     fi
 
     invoice=$(cat "$f")
-    
-    pay_invoice $invoice
+    cmt="$COMMENT for $(basename \"$f\")"
+    pay_invoice $invoice $cmt
     
     if [ $status_pay -eq 0 ]
     then
