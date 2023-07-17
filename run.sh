@@ -91,7 +91,8 @@ then
   if [ ! -z "$PAYER" ]
   then
     parsetoken_payer "$PAYER"
-    echo "Balance: $(getSaldo ${token_payer[@]}) sats"
+    balance=$(getBalance "${token_payer[@]}")
+    echo "Balance: $balance sats"
   fi
   exit 0
 fi

@@ -14,31 +14,32 @@ parsetoken () {
    local token_pass=$(echo "$token_user" | grep -o -P '(?<=:).*(?=)')
    local token_user=$(echo "$token_user" | grep -o -P '(?<=).*(?=:)')
    local token_url=$(echo "$token_param" | grep -o -P '(?<=@).*(?=)')
+
    if [ -z "$token_url" ]
    then
       local token_engine=$token_param
    else 
      local token_engine="${token_param%%://*}"
-   fi  
+   fi 
    
    if [ -z "$token_user" ]
    then
-     local payer_lnpay="S"
-     local payer_user=$(echo "$token_param" | grep -o -P '(?<=lnpay://).*(?=@)')
+     local token_lnpay="S"
+     local token_user=$(echo "$token_param" | grep -o -P '(?<=lnpay://).*(?=@)')
    fi
-   if [ -z "$payer_user" ]
+   if [ -z "$token_user" ]
    then
-     local payer_lnpay=
+     local token_user=
    fi
-
-   token_criada[0]=$token_param
-   token_criada[1]=$token_engine
-   token_criada[2]=$token_url
-   token_criada[3]=$token_user
-   token_criada[4]=$token_pass
-   token_criada[5]=$token_lnpay
-   token_criada[6]=""
-		  
+   
+   token_criada[0]="$token_param"
+   token_criada[1]="$token_engine"
+   token_criada[2]="$token_url"
+   token_criada[3]="$token_user"
+   token_criada[4]="$token_pass"
+   token_criada[5]="$token_lnpay"
+   token_criada[6]="0"
+   token_criada[7]="not logged"
 
    echo  "==============================="
    echo  "Engine: ${token_criada[1]}"				
@@ -47,7 +48,7 @@ parsetoken () {
    echo  "URL...: ${token_criada[2]}"
    debug "Token.: ${token_criada[0]}"
    echo  "LNPay.: ${token_criada[5]}"
-   echo  "AcTok.: ${token_criada[6]}"
+   echo  "AcTok.: ${token_criada[7]}"
    echo  "==============================="
 
 }
@@ -56,7 +57,7 @@ parsetoken () {
 parsetoken_payer () {
    parsetoken $*
    
-   token_payer=(${token_criada[@]})
+   token_payer=("${token_criada[@]}")
    
    echo  "==============================="
    echo  "Payer Engine: ${token_payer[1]}"				
@@ -65,15 +66,17 @@ parsetoken_payer () {
    echo  "Payer URL...: ${token_payer[2]}"
    debug "Payer Token.: ${token_payer[0]}"
    echo  "Payer LNPay.: ${token_payer[5]}"
-   echo  "Payer AcTok.: ${token_payer[6]}"
+   echo  "Payer AcTok.: ${token_payer[7]}"
    echo  "==============================="
     
 }
 
-getSaldo () {
+getBalance () {
    local token=("$@")
    local getSaldoResult=""  
    local status=1
+   
+   echo Tokens "${token[@]}"
    
    case "$2" in
      lnbits )
@@ -125,28 +128,32 @@ pay_invoice () {
       return $status_pay
    fi
    
-   if [[ "${token_payer[1]}" == "lncli" ]]
-   then
-     ret_pay=$(lncli --macaroonpath=/mnt/hdd/mynode/lnd/data/chain/bitcoin/mainnet/admin.macaroon --rpcserver=localhost:10009 --lnddir=/mnt/hdd/mynode/lnd payinvoice $maxfee -f --allow_self_payment $channel "$invoice" 2>&1)
-
-     status_pay=$?
+   case "${token_payer[1]}" in
+     lncli )
+       ret_pay=$(lncli --macaroonpath=/mnt/hdd/mynode/lnd/data/chain/bitcoin/mainnet/admin.macaroon --rpcserver=localhost:10009 --lnddir=/mnt/hdd/mynode/lnd payinvoice $maxfee -f --allow_self_payment $channel "$invoice" 2>&1)
      
-   elif [[ "${token_payer[1]}" == "lnbits" ]]
-   then 
-     ret_pay=$(curl -s -X POST "${token_payer[2]}/api/v1/payments" -d "{\"out\": true, \"bolt11\": \"$invoice\", \"extra\": {} }" -H "X-Api-Key: ${token_payer[4]}" -H "Content-type: application/json")
-     status_pay=$?
+       status_pay=$?
+     
+       ;;
+     
+     lnbits )
+     
+       ret_pay=$(curl -s -X POST "${token_payer[2]}/api/v1/payments" -d "{\"out\": true, \"bolt11\": \"$invoice\", \"extra\": {} }" -H "X-Api-Key: ${token_payer[4]}" -H "Content-type: application/json")
+       status_pay=$?
 
-     if [ $status_pay -eq 0 ]
-     then
-       pay_hash=$(echo $ret_pay|jq -r .payment_hash)
-       if [ "$pay_hash" == "null" ]
+       if [ $status_pay -eq 0 ]
        then
-         status_pay=1
-       fi       
-     fi     
-   else
-      ret_pay="${token_payer[1]}: Engine não implementada."
-   fi
+         pay_hash=$(echo $ret_pay|jq -r .payment_hash)
+	 if [ "$pay_hash" == "null" ]
+	 then
+	   status_pay=1
+	 fi       
+       fi     
+       ;;
+     * )
+       ret_pay="${token_payer[1]}: Engine não implementada."
+       ;;
+   esac
    
    if echo "$ret_pay" | grep "invoice is already paid" &> /dev/null
    then
