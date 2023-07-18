@@ -42,7 +42,19 @@ parsetoken () {
    then
      local token_user=
    fi   
-   
+
+   if [[ "$token_engine" == "lndhub" ]]
+   then
+     #if it is a lnbits extension, lets use as lnbits itself
+     local txt="${token_url%/lndhub/ext}"
+     if [[ "$txt" != "$token_url" ]]
+     then
+       token_lnpay=""
+       token_url="$txt"
+       token_engine="lnbits"
+     fi
+   fi
+
    token_criada[$TK_PARAM]="$token_param"
    token_criada[$TK_ENGINE]="$token_engine"
    token_criada[$TK_URL]="$token_url"
@@ -59,7 +71,7 @@ parsetoken () {
    echo  "URL...: ${token_criada[$TK_URL]}"
    debug "Token.: ${token_criada[$TK_PARAM]}"
    echo  "LNPay.: ${token_criada[$TK_LNPAY]}"
-   echo  "Token2: ${token_criada[$TK_TK_ACCESSTOKEN]}"
+   echo  "Token2: ${token_criada[$TK_ACCESSTOKEN]}"
    echo  "==============================="
 
 }
