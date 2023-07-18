@@ -59,7 +59,7 @@ After all are good, the commands/list.csv is renamed to list.csv.done and severa
 
 .invoice - invoice to pay
 
-.cvs.done - file processed
+.csv.done - file processed
 
 .invoice.paid - invoice paid
 ```
