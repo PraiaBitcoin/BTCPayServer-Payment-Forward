@@ -232,6 +232,33 @@ pay_invoice () {
 	 fi       
        fi     
        ;;       
+       
+     lndhub )
+       auth_LNDHUB "$payer"
+              
+       local acesstoken="$(eval ""echo \${$payer[$TK_ACCESSTOKEN]}"")"
+       local data="{\"invoice\":\"$invoice\"}"
+       
+       local ret_pay=$(curl -s -X POST "$url/payinvoice" -d "$data" -H "Content-type: application/json" -H "authorization: Bearer $acesstoken")
+       status_pay=$?       
+       if [ $status_pay -eq 0 ]
+       then
+         local pay_hash=$(echo $ret_pay|jq -r .payment_hash)
+	 if [[ "$pay_hash" == "null" || -z "$pay_hash" ]]
+	 then
+	   status_pay=1
+	   echo "******************************************"
+	 fi       
+	 
+         echo $ret
+	 #local pay_hash=$(echo $ret_pay|jq -r .payment_hash)
+	 #if [ "$pay_hash" == "null" ]
+	 #then
+	 #status_pay=1
+	 #fi
+       fi							   
+       ;;
+			  
      * )
        ret_pay="$engine: Engine não implementada."
        ;;
@@ -250,6 +277,10 @@ pay_invoice () {
      echo "$ret_pay"
      status_pay=1
    elif echo "$ret_pay" | grep "validation error" &> /dev/null
+   then
+      echo "$ret_pay"
+      status_pay=1	   
+   elif echo "$ret_pay" | grep "required" &> /dev/null
    then
       echo "$ret_pay"
       status_pay=1	   
