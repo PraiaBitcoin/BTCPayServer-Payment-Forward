@@ -92,12 +92,10 @@ getBalance () {
    local status=1
    local url="$(eval ""echo \${$token[$TK_URL]}"")"
    local pass="$(eval ""echo \${$token[$TK_PASS]}"")"
+   local engine="$(eval ""echo \${$token[$TK_ENGINE]}"")"
    
    
-#   echo "$(eval ""echo \${$token[$TK_ENGINE]}"")"
-#   exit 1
-   
-   case "$(eval ""echo \${$token[$TK_ENGINE]}"")" in
+   case "$engine" in
      lnbits )
        local ret=$(curl -s -X GET "$url/api/v1/wallet" -H "X-Api-Key: $pass")
        local status=$?
@@ -125,9 +123,7 @@ getBalance () {
        ;;   
       
     * )     
-       local getSaldoResult="Engine ${!token[$TK_ENGINE]} não implementada"
-       echo $token
-       exit 1
+       local getSaldoResult="Engine [$engine] não implementada"
        ;;
    esac
    
@@ -140,13 +136,18 @@ getBalance () {
 
 
 pay_invoice () {
-   invoice="$1"
-   comment="$2"
-   payer="$3"
+   local invoice="$1"
+   local comment="$2"
+   local payer="$3"
    if [[ -z $payer ]]
    then
-     payer='token_payer'
-   fi  
+     local payer='token_payer'
+   fi
+   local url="$(eval ""echo \${$payer[$TK_URL]}"")"
+   local user="$(eval ""echo \${$payer[$TK_USER]}"")"
+   local pass="$(eval ""echo \${$payer[$TK_PASS]}"")"
+   local engine="$(eval ""echo \${$payer[$TK_ENGINE]}"")"
+
    status_pay=1
    if [ -z "$invoice" ]
    then
@@ -154,7 +155,7 @@ pay_invoice () {
       return $status_pay
    fi
    
-   case "${!payer[$TK_ENGINE]}" in
+   case "$engine" in
      lncli )
        ret_pay=$(lncli --macaroonpath=/mnt/hdd/mynode/lnd/data/chain/bitcoin/mainnet/admin.macaroon --rpcserver=localhost:10009 --lnddir=/mnt/hdd/mynode/lnd payinvoice $maxfee -f --allow_self_payment $channel "$invoice" 2>&1)
      
@@ -164,12 +165,12 @@ pay_invoice () {
      
      lnbits )
      
-       ret_pay=$(curl -s -X POST "${!payer[$TK_URL]}/api/v1/payments" -d "{\"out\": true, \"bolt11\": \"$invoice\", \"extra\": {} }" -H "X-Api-Key: ${!payer[$TK_PASS]}" -H "Content-type: application/json")
+       ret_pay=$(curl -s -X POST "$url/api/v1/payments" -d "{\"out\": true, \"bolt11\": \"$invoice\", \"extra\": {} }" -H "X-Api-Key: $pass" -H "Content-type: application/json")
        status_pay=$?
 
        if [ $status_pay -eq 0 ]
        then
-         pay_hash=$(echo $ret_pay|jq -r .payment_hash)
+         local pay_hash=$(echo $ret_pay|jq -r .payment_hash)
 	 if [ "$pay_hash" == "null" ]
 	 then
 	   status_pay=1
@@ -177,7 +178,7 @@ pay_invoice () {
        fi     
        ;;       
      * )
-       ret_pay="${!payer[$TK_ENGINE]}: Engine não implementada."
+       ret_pay="$engine: Engine não implementada."
        ;;
    esac
    

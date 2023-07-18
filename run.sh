@@ -124,7 +124,7 @@ then
 
     invoice=$(cat "$f")
     cmt="$COMMENT for $(basename \"$f\")"
-    pay_invoice $invoice $cmt
+    pay_invoice $invoice "$cmt" 'token_payer'
     
     if [ $status_pay -eq 0 ]
     then
