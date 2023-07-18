@@ -2,8 +2,12 @@
 
 readonly TK_PARAM=0
 readonly TK_ENGINE=1
+readonly TK_URL=2
 readonly TK_USER=3
 readonly TK_PASS=4
+readonly TK_LNPAY=5
+readonly TK_LOGGED=6
+readonly TK_TOKEN2=7
 
 debug () {
   if [[ "$DEBUG" -gt 0 ]]
@@ -41,21 +45,21 @@ parsetoken () {
    
    token_criada[$TK_PARAM]="$token_param"
    token_criada[$TK_ENGINE]="$token_engine"
-   token_criada[2]="$token_url"
+   token_criada[$TK_URL]="$token_url"
    token_criada[$TK_USER]="$token_user"
    token_criada[$TK_PASS]="$token_pass"
-   token_criada[5]="$token_lnpay"
-   token_criada[6]="0"
-   token_criada[7]=""
+   token_criada[$TK_LNPAY]="$token_lnpay"
+   token_criada[$TK_LOGGED]="0"
+   token_criada[$TK_TOKEN2]=""
 
    echo  "==============================="
    echo  "Engine: ${token_criada[$TK_ENGINE]}"				
    echo  "User..: ${token_criada[$TK_USER]}"
    debug "Pass..: ${token_criada[$TK_PASS]}"
-   echo  "URL...: ${token_criada[2]}"
+   echo  "URL...: ${token_criada[$TK_URL]}"
    debug "Token.: ${token_criada[$TK_PARAM]}"
-   echo  "LNPay.: ${token_criada[5]}"
-   echo  "Token2: ${token_criada[7]}"
+   echo  "LNPay.: ${token_criada[$TK_LNPAY]}"
+   echo  "Token2: ${token_criada[$TK_TOKEN2]}"
    echo  "==============================="
 
 }
@@ -70,22 +74,32 @@ parsetoken_payer () {
    echo  "Payer Engine: ${token_payer[$TK_ENGINE]}"				
    echo  "Payer User..: ${token_payer[$TK_USER]}"
    debug "Payer Pass..: ${token_payer[$TK_PASS]}"
-   echo  "Payer URL...: ${token_payer[2]}"
+   echo  "Payer URL...: ${token_payer[$TK_URL]}"
    debug "Payer Token.: ${token_payer[$TK_PARAM]}"
-   echo  "Payer LNPay.: ${token_payer[5]}"
-   echo  "Payer Token2: ${token_payer[7]}"
+   echo  "Payer LNPay.: ${token_payer[$TK_LNPAY]}"
+   echo  "Payer Token2: ${token_payer[$TK_TOKEN2]}"
    echo  "==============================="
     
 }
 
 getBalance () {
-   local token=("$@")
+   local token="$1"
+   if [[ -z "$token" ]]
+   then
+     local token="token_payer"
+   fi  
    local getSaldoResult=""  
    local status=1
+   local url="$(eval ""echo \${$token[$TK_URL]}"")"
+   local pass="$(eval ""echo \${$token[$TK_PASS]}"")"
    
-   case "${token[$TK_ENGINE]}" in
+   
+#   echo "$(eval ""echo \${$token[$TK_ENGINE]}"")"
+#   exit 1
+   
+   case "$(eval ""echo \${$token[$TK_ENGINE]}"")" in
      lnbits )
-       local ret=$(curl -s -X GET "${token_payer[2]}/api/v1/wallet" -H "X-Api-Key: ${token_payer[$TK_PASS]}")
+       local ret=$(curl -s -X GET "$url/api/v1/wallet" -H "X-Api-Key: $pass")
        local status=$?
      
        if [ $status -gt 0 ]
@@ -111,7 +125,9 @@ getBalance () {
        ;;   
       
     * )     
-       local getSaldoResult="Engine $2 não implementada"
+       local getSaldoResult="Engine ${!token[$TK_ENGINE]} não implementada"
+       echo $token
+       exit 1
        ;;
    esac
    
@@ -126,6 +142,11 @@ getBalance () {
 pay_invoice () {
    invoice="$1"
    comment="$2"
+   payer="$3"
+   if [[ -z $payer ]]
+   then
+     payer='token_payer'
+   fi  
    status_pay=1
    if [ -z "$invoice" ]
    then
@@ -133,7 +154,7 @@ pay_invoice () {
       return $status_pay
    fi
    
-   case "${token_payer[$TK_ENGINE]}" in
+   case "${!payer[$TK_ENGINE]}" in
      lncli )
        ret_pay=$(lncli --macaroonpath=/mnt/hdd/mynode/lnd/data/chain/bitcoin/mainnet/admin.macaroon --rpcserver=localhost:10009 --lnddir=/mnt/hdd/mynode/lnd payinvoice $maxfee -f --allow_self_payment $channel "$invoice" 2>&1)
      
@@ -143,7 +164,7 @@ pay_invoice () {
      
      lnbits )
      
-       ret_pay=$(curl -s -X POST "${token_payer[2]}/api/v1/payments" -d "{\"out\": true, \"bolt11\": \"$invoice\", \"extra\": {} }" -H "X-Api-Key: ${token_payer[$TK_PASS]}" -H "Content-type: application/json")
+       ret_pay=$(curl -s -X POST "${!payer[$TK_URL]}/api/v1/payments" -d "{\"out\": true, \"bolt11\": \"$invoice\", \"extra\": {} }" -H "X-Api-Key: ${!payer[$TK_PASS]}" -H "Content-type: application/json")
        status_pay=$?
 
        if [ $status_pay -eq 0 ]
@@ -154,9 +175,9 @@ pay_invoice () {
 	   status_pay=1
 	 fi       
        fi     
-       ;;
+       ;;       
      * )
-       ret_pay="${token_payer[$TK_ENGINE]}: Engine não implementada."
+       ret_pay="${!payer[$TK_ENGINE]}: Engine não implementada."
        ;;
    esac
    

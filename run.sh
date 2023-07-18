@@ -91,7 +91,7 @@ then
   if [ ! -z "$PAYER" ]
   then
     parsetoken_payer "$PAYER"
-    balance=$(getBalance "${token_payer[@]}")
+    balance=$(getBalance)
     echo "Balance: $balance sats"
   fi
   exit 0
@@ -111,6 +111,8 @@ then
   echo "Paying invoices"
   
   parsetoken_payer "$PAYER"
+  balance=$(getBalance)
+  echo "Balance: $balance sats"
     
   for f in ./commands/*.invoice
   do
